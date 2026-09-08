@@ -1,11 +1,10 @@
 "use client";
 
-import type { ThoughtDetailContent } from "@/lib/mock/demo-analysis";
-import type { Thought } from "@/types/refract";
+import type { Thought, ThoughtContextMetadata } from "@/types/refract";
 
 type ThoughtDetailProps = {
   thought: Thought;
-  detail: ThoughtDetailContent;
+  metadata: ThoughtContextMetadata;
   onBuildContext: () => void;
 };
 
@@ -22,9 +21,23 @@ const typeLabels: Record<Thought["type"], string> = {
 
 export function ThoughtDetail({
   thought,
-  detail,
+  metadata,
   onBuildContext,
 }: ThoughtDetailProps) {
+  const established = metadata.context
+    .filter(
+      (selection) =>
+        selection.state === "carry" &&
+        ["core_insights", "related_ideas"].includes(selection.section),
+    )
+    .map((selection) => selection.seed.content);
+  const openQuestions = metadata.context
+    .filter(
+      (selection) =>
+        selection.section === "open_questions" && selection.state !== "drop",
+    )
+    .map((selection) => selection.seed.content);
+
   return (
     <aside
       aria-labelledby="thought-detail-title"
@@ -80,18 +93,20 @@ export function ThoughtDetail({
             What was established
           </h3>
           <ul className="mt-3 space-y-3">
-            {detail.established.map((item) => (
-              <li
-                key={item}
-                className="grid grid-cols-[0.65rem_1fr] gap-2 text-sm leading-5 text-muted"
-              >
-                <span
-                  aria-hidden="true"
-                  className="mt-[0.45rem] size-1 bg-accent/70"
-                />
-                <span>{item}</span>
-              </li>
-            ))}
+            {(established.length > 0 ? established : [thought.summary]).map(
+              (item, index) => (
+                <li
+                  key={`${item}-${index}`}
+                  className="grid grid-cols-[0.65rem_1fr] gap-2 text-sm leading-5 text-muted"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mt-[0.45rem] size-1 bg-accent/70"
+                  />
+                  <span>{item}</span>
+                </li>
+              ),
+            )}
           </ul>
         </section>
 
@@ -102,19 +117,25 @@ export function ThoughtDetail({
           >
             Open questions
           </h3>
-          <ol className="mt-3 space-y-3">
-            {detail.openQuestions.map((question, index) => (
-              <li
-                key={question}
-                className="grid grid-cols-[1.15rem_1fr] gap-2 text-sm leading-5 text-muted"
-              >
-                <span className="font-mono text-[9px] text-ink/40">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span>{question}</span>
-              </li>
-            ))}
-          </ol>
+          {openQuestions.length > 0 ? (
+            <ol className="mt-3 space-y-3">
+              {openQuestions.map((question, index) => (
+                <li
+                  key={`${question}-${index}`}
+                  className="grid grid-cols-[1.15rem_1fr] gap-2 text-sm leading-5 text-muted"
+                >
+                  <span className="font-mono text-[9px] text-ink/40">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span>{question}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-3 text-sm leading-5 text-muted">
+              No open questions were identified for this thought.
+            </p>
+          )}
         </section>
 
         <div className="mt-7 border-t border-ink/10 pt-5">

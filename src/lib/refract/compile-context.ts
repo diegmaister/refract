@@ -24,7 +24,7 @@ const outputSections: OutputSection[] = [
     sourceSections: ["current_goal"],
   },
   {
-    heading: "Global constraints",
+    heading: "Global context",
     sourceSections: ["global_constraints"],
     useBullets: true,
   },
@@ -40,7 +40,7 @@ const outputSections: OutputSection[] = [
   },
   {
     heading: "Related developments",
-    sourceSections: ["related_ideas", "excluded"],
+    sourceSections: ["related_ideas", "previous_hypotheses", "excluded"],
     useBullets: true,
   },
   {

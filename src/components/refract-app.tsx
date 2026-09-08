@@ -5,17 +5,17 @@ import { useState } from "react";
 import { ContextEditor } from "@/components/context-editor/context-editor";
 import { ConversationImport } from "@/components/import/conversation-import";
 import { ThoughtWorkspace } from "@/components/thought-map/thought-workspace";
-import {
-  demoConversationTitle,
-  demoSelectedThoughtId,
-  demoThoughts,
-} from "@/lib/mock/demo-analysis";
-import type { Message } from "@/types/refract";
+import type { ImportedConversation } from "@/lib/importers/conversation-importer";
+import type { RefractAnalysis } from "@/types/refract";
 
 type AppView = "import" | "workspace" | "context";
 
 const steps = [
-  { number: "01", title: "Import", description: "Paste a messy conversation." },
+  {
+    number: "01",
+    title: "Import",
+    description: "Use a share link or paste a conversation.",
+  },
   {
     number: "02",
     title: "Refract",
@@ -44,16 +44,82 @@ function ProductMark() {
   );
 }
 
+function getApiErrorMessage(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object" || !("error" in payload)) {
+    return undefined;
+  }
+
+  const error = payload.error;
+  if (!error || typeof error !== "object" || !("message" in error)) {
+    return undefined;
+  }
+
+  return typeof error.message === "string" ? error.message : undefined;
+}
+
 export function RefractApp() {
   const [view, setView] = useState<AppView>("import");
   const [conversation, setConversation] = useState("");
-  const [normalizedMessages, setNormalizedMessages] = useState<Message[]>([]);
-  const [selectedThoughtId, setSelectedThoughtId] = useState(
-    demoSelectedThoughtId,
-  );
+  const [analysis, setAnalysis] = useState<RefractAnalysis | null>(null);
+  const [selectedThoughtId, setSelectedThoughtId] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const selectedThought =
-    demoThoughts.find((thought) => thought.id === selectedThoughtId) ??
-    demoThoughts[0];
+    analysis?.thoughts.find((thought) => thought.id === selectedThoughtId) ??
+    analysis?.thoughts[0];
+
+  async function handleRefract(importedConversation?: ImportedConversation) {
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          importedConversation
+            ? { messages: importedConversation.messages }
+            : { transcript: conversation },
+        ),
+      });
+      const payload: unknown = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(payload) ??
+            "Refract could not analyze this conversation. Please try again.",
+        );
+      }
+
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        !("analysis" in payload)
+      ) {
+        throw new Error("Refract received an invalid analysis. Please try again.");
+      }
+
+      const nextAnalysis = payload.analysis as RefractAnalysis;
+      const firstThought = nextAnalysis.thoughts[0];
+
+      if (!firstThought) {
+        throw new Error("No continuable thoughts were found in this conversation.");
+      }
+
+      setAnalysis(nextAnalysis);
+      setSelectedThoughtId(firstThought.id);
+      setView("workspace");
+    } catch (error) {
+      setAnalysisError(
+        error instanceof Error
+          ? error.message
+          : "Refract could not analyze this conversation. Please try again.",
+      );
+      setView("import");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -77,7 +143,7 @@ export function RefractApp() {
                   /
                 </span>
                 <span className="font-medium text-ink">
-                  {demoConversationTitle}
+                  {analysis?.conversationTitle ?? "Conversation"}
                 </span>
               </div>
               <button
@@ -95,12 +161,14 @@ export function RefractApp() {
                 <span aria-hidden="true" className="text-ink/20">
                   /
                 </span>
-                <span className="text-muted">{demoConversationTitle}</span>
+                <span className="text-muted">
+                  {analysis?.conversationTitle ?? "Conversation"}
+                </span>
                 <span aria-hidden="true" className="text-ink/20">
                   /
                 </span>
                 <span className="font-medium text-ink">
-                  {selectedThought.title}
+                  {selectedThought?.title ?? "Thought"}
                 </span>
               </div>
               <button
@@ -129,19 +197,21 @@ export function RefractApp() {
                 Refract your conversation
               </h1>
               <p className="mt-5 max-w-xl text-[15px] leading-7 text-muted sm:text-base">
-                Paste a messy AI conversation and Refract will reconstruct the
-                ideas inside it, so you can decide what should carry forward.
+                Import a ChatGPT conversation or paste any AI transcript.
+                Refract will reconstruct the ideas inside it, so you can decide
+                what should carry forward.
               </p>
             </div>
 
             <ConversationImport
               conversation={conversation}
-              onConversationChange={setConversation}
-              onRefract={(messages) => {
-                setNormalizedMessages(messages);
-                setSelectedThoughtId(demoSelectedThoughtId);
-                setView("workspace");
+              onConversationChange={(nextConversation) => {
+                setConversation(nextConversation);
+                setAnalysisError(null);
               }}
+              onRefract={handleRefract}
+              isAnalyzing={isAnalyzing}
+              analysisError={analysisError}
             />
           </section>
 
@@ -177,24 +247,31 @@ export function RefractApp() {
             </ol>
           </section>
         </main>
-      ) : view === "workspace" ? (
+      ) : view === "workspace" && analysis && selectedThought ? (
         <ThoughtWorkspace
+          thoughts={analysis.thoughts}
+          relationships={analysis.edges}
+          metadata={analysis.thoughtContextMetadata}
           selectedThoughtId={selectedThought.id}
-          messageCount={normalizedMessages.length}
+          messageCount={analysis.messages.length}
           uncertainRoleCount={
-            normalizedMessages.filter((message) => message.role === "unknown")
+            analysis.messages.filter((message) => message.role === "unknown")
               .length
           }
           onSelectThought={setSelectedThoughtId}
           onBuildContext={() => setView("context")}
         />
-      ) : (
+      ) : analysis && selectedThought ? (
         <ContextEditor
-          key={selectedThought.id}
+          key={`${analysis.conversationTitle}:${selectedThought.id}`}
           thought={selectedThought}
           conversation={conversation}
+          thoughts={analysis.thoughts}
+          edges={analysis.edges}
+          globalContext={analysis.globalContext}
+          metadata={analysis.thoughtContextMetadata}
         />
-      )}
+      ) : null}
     </div>
   );
 }

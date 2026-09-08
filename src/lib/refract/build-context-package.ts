@@ -147,7 +147,7 @@ function getRelationshipReason(
     return "Included because the thought map records a direct conceptual relationship.";
   }
 
-  return "Included through explicit relevance metadata for this mocked continuation.";
+  return "Included because the analysis identified it as relevant to the selected continuation.";
 }
 
 function createSuggestion(
@@ -168,7 +168,10 @@ function createSuggestion(
   };
 }
 
-function createGlobalSuggestion(seed: ContextSeed): ContextSuggestion {
+function createGlobalSuggestion(
+  seed: ContextSeed,
+  targetThought: Thought,
+): ContextSuggestion {
   const isGoal = seed.category === "goal";
 
   return {
@@ -177,10 +180,10 @@ function createGlobalSuggestion(seed: ContextSeed): ContextSuggestion {
     section: "global_constraints",
     state: "carry",
     suggestedState: "carry",
-    priority: "essential",
+    priority: seed.priority,
     inclusionReason: isGoal
-      ? "Included because this thought is being evaluated as part of the global interview-project goal."
-      : "Included because this global constraint applies even when it is semantically dissimilar to the selected thought.",
+      ? `Included because this global goal orients the continuation of ${targetThought.title}.`
+      : `Included because this global ${seed.category} materially constrains or informs the continuation of ${targetThought.title}.`,
   };
 }
 
@@ -208,7 +211,7 @@ function createLineageSuggestion(
       "Included because these conceptual relationships establish how the selected thought developed.",
     state: "carry",
     suggestedState: "carry",
-    priority: lineage.length > 2 ? "essential" : "recommended",
+    priority: "supporting",
   };
 }
 
@@ -267,13 +270,18 @@ export function buildContextPackage({
     lineageThoughts,
     targetThought,
   );
+  const hasAnalyzedLineage = targetMetadata.context.some(
+    (selection) => selection.section === "background_lineage",
+  );
 
   const inventory = [
     ...targetMetadata.context
       .filter((selection) => selection.section === "current_goal")
       .map((selection) => createSuggestion(selection, targetThought, edges)),
-    ...selectedGlobalSeeds.map(createGlobalSuggestion),
-    ...(lineageSuggestion ? [lineageSuggestion] : []),
+    ...selectedGlobalSeeds.map((seed) =>
+      createGlobalSuggestion(seed, targetThought),
+    ),
+    ...(lineageSuggestion && !hasAnalyzedLineage ? [lineageSuggestion] : []),
     ...targetMetadata.context
       .filter((selection) => selection.section !== "current_goal")
       .map((selection) => createSuggestion(selection, targetThought, edges)),

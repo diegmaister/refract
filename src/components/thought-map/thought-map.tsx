@@ -11,7 +11,6 @@ import {
 import type { Edge, NodeMouseHandler, NodeTypes } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { demoThoughtPositions } from "@/lib/mock/demo-analysis";
 import type { Thought, ThoughtEdge } from "@/types/refract";
 
 import { ThoughtNode } from "./thought-node";
@@ -29,8 +28,20 @@ const nodeTypes = { thought: ThoughtNode } satisfies NodeTypes;
 const relationLabels: Partial<Record<ThoughtEdge["relation"], string>> = {
   led_to: "led to",
   related_to: "related to",
+  depends_on: "depends on",
+  contradicts: "contradicts",
   evolved_into: "evolved into",
+  branch_of: "branch of",
 };
+
+function getThoughtPosition(index: number, thoughtCount: number) {
+  const columnCount = Math.max(1, Math.ceil(Math.sqrt(thoughtCount * 1.5)));
+
+  return {
+    x: (index % columnCount) * 300,
+    y: Math.floor(index / columnCount) * 190,
+  };
+}
 
 export function ThoughtMap({
   thoughts,
@@ -40,10 +51,10 @@ export function ThoughtMap({
 }: ThoughtMapProps) {
   const nodes = useMemo<ThoughtFlowNode[]>(
     () =>
-      thoughts.map((thought) => ({
+      thoughts.map((thought, index) => ({
         id: thought.id,
         type: "thought",
-        position: demoThoughtPositions[thought.id],
+        position: getThoughtPosition(index, thoughts.length),
         data: { thought },
         selected: thought.id === selectedThoughtId,
         draggable: false,

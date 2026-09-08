@@ -128,6 +128,15 @@ export type ThoughtContextMetadata = {
   context: ContextSeedSelection[];
 };
 
+export type RefractAnalysis = {
+  conversationTitle: string;
+  messages: Message[];
+  thoughts: Thought[];
+  edges: ThoughtEdge[];
+  globalContext: GlobalContext;
+  thoughtContextMetadata: ThoughtContextMetadata[];
+};
+
 export type SuggestedContextPackage = Omit<ContextPackage, "items"> & {
   items: ContextSuggestion[];
 };

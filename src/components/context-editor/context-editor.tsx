@@ -2,11 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { demoThoughtEdges, demoThoughts } from "@/lib/mock/demo-analysis";
-import {
-  demoGlobalContext,
-  demoThoughtContextMetadata,
-} from "@/lib/mock/demo-context";
 import { buildContextPackage } from "@/lib/refract/build-context-package";
 import { compileContext } from "@/lib/refract/compile-context";
 import {
@@ -25,7 +20,10 @@ import type {
   ContextSuggestion,
   ContinuationIntent,
   ContinuationIntentSelection,
+  GlobalContext,
   Thought,
+  ThoughtContextMetadata,
+  ThoughtEdge,
 } from "@/types/refract";
 
 import {
@@ -40,6 +38,10 @@ import { ContinuationIntentStep } from "./continuation-intent";
 type ContextEditorProps = {
   thought: Thought;
   conversation: string;
+  thoughts: Thought[];
+  edges: ThoughtEdge[];
+  globalContext: GlobalContext;
+  metadata: ThoughtContextMetadata[];
 };
 
 type ContextStage = "edit" | "intent" | "export";
@@ -57,7 +59,7 @@ const sectionOrder: ContextItemSection[] = [
 
 const sectionLabels: Record<ContextItemSection, string> = {
   current_goal: "Current goal",
-  global_constraints: "Global constraints",
+  global_constraints: "Global context",
   background_lineage: "Background & lineage",
   core_insights: "Core insights",
   related_ideas: "Related ideas",
@@ -66,13 +68,19 @@ const sectionLabels: Record<ContextItemSection, string> = {
   excluded: "Excluded by suggestion",
 };
 
-function createContextInventory(thought: Thought) {
+function createContextInventory(
+  thought: Thought,
+  thoughts: Thought[],
+  edges: ThoughtEdge[],
+  globalContext: GlobalContext,
+  metadata: ThoughtContextMetadata[],
+) {
   return buildContextPackage({
     targetThoughtId: thought.id,
-    thoughts: demoThoughts,
-    edges: demoThoughtEdges,
-    globalContext: demoGlobalContext,
-    metadata: demoThoughtContextMetadata,
+    thoughts,
+    edges,
+    globalContext,
+    metadata,
   }).items;
 }
 
@@ -102,10 +110,24 @@ function createDensityPreview(
   };
 }
 
-export function ContextEditor({ thought, conversation }: ContextEditorProps) {
+export function ContextEditor({
+  thought,
+  conversation,
+  thoughts,
+  edges,
+  globalContext,
+  metadata,
+}: ContextEditorProps) {
   const initialInventory = useMemo(
-    () => createContextInventory(thought),
-    [thought],
+    () =>
+      createContextInventory(
+        thought,
+        thoughts,
+        edges,
+        globalContext,
+        metadata,
+      ),
+    [edges, globalContext, metadata, thought, thoughts],
   );
   const [density, setDensity] = useState<ContextDensity>("balanced");
   const [items, setItems] = useState(() =>

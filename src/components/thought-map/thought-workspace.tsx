@@ -1,13 +1,16 @@
-import {
-  demoThoughtDetails,
-  demoThoughtEdges,
-  demoThoughts,
-} from "@/lib/mock/demo-analysis";
+import type {
+  Thought,
+  ThoughtContextMetadata,
+  ThoughtEdge,
+} from "@/types/refract";
 
 import { ThoughtDetail } from "./thought-detail";
 import { ThoughtMap } from "./thought-map";
 
 type ThoughtWorkspaceProps = {
+  thoughts: Thought[];
+  relationships: ThoughtEdge[];
+  metadata: ThoughtContextMetadata[];
   selectedThoughtId: string;
   messageCount: number;
   uncertainRoleCount: number;
@@ -16,6 +19,9 @@ type ThoughtWorkspaceProps = {
 };
 
 export function ThoughtWorkspace({
+  thoughts,
+  relationships,
+  metadata,
   selectedThoughtId,
   messageCount,
   uncertainRoleCount,
@@ -23,8 +29,10 @@ export function ThoughtWorkspace({
   onBuildContext,
 }: ThoughtWorkspaceProps) {
   const selectedThought =
-    demoThoughts.find((thought) => thought.id === selectedThoughtId) ??
-    demoThoughts[0];
+    thoughts.find((thought) => thought.id === selectedThoughtId) ?? thoughts[0];
+  const selectedMetadata =
+    metadata.find((entry) => entry.thoughtId === selectedThought.id) ??
+    metadata[0];
 
   return (
     <main className="grid min-w-0 lg:h-[calc(100dvh-4rem)] lg:grid-cols-[minmax(0,1fr)_23rem] lg:overflow-hidden">
@@ -49,11 +57,11 @@ export function ThoughtWorkspace({
             <span aria-hidden="true" className="mx-2 text-ink/20">
               ·
             </span>
-            {demoThoughts.length} thoughts
+            {thoughts.length} thoughts
             <span aria-hidden="true" className="mx-2 text-ink/20">
               ·
             </span>
-            {demoThoughtEdges.length} relationships
+            {relationships.length} relationships
             {uncertainRoleCount > 0 && (
               <>
                 <span aria-hidden="true" className="mx-2 text-ink/20">
@@ -67,8 +75,8 @@ export function ThoughtWorkspace({
 
         <div className="h-[34rem] min-h-0 w-full sm:h-[40rem] lg:h-auto lg:flex-1">
           <ThoughtMap
-            thoughts={demoThoughts}
-            relationships={demoThoughtEdges}
+            thoughts={thoughts}
+            relationships={relationships}
             selectedThoughtId={selectedThought.id}
             onSelectThought={onSelectThought}
           />
@@ -78,7 +86,7 @@ export function ThoughtWorkspace({
       <ThoughtDetail
         key={selectedThought.id}
         thought={selectedThought}
-        detail={demoThoughtDetails[selectedThought.id]}
+        metadata={selectedMetadata}
         onBuildContext={onBuildContext}
       />
     </main>
