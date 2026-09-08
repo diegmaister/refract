@@ -47,3 +47,54 @@ input {
   background: #cfe1da;
   color: var(--ink);
 }
+
+.refract-flow {
+  --xy-background-color: var(--background);
+  --xy-controls-button-background-color: var(--surface);
+  --xy-controls-button-background-color-hover: var(--accent-soft);
+  --xy-controls-button-color: var(--muted);
+  --xy-controls-button-color-hover: var(--ink);
+  --xy-controls-button-border-color: rgba(23, 32, 29, 0.1);
+  --xy-attribution-background-color: transparent;
+}
+
+.refract-flow .react-flow__node {
+  cursor: pointer;
+}
+
+.refract-flow .react-flow__node:focus-visible {
+  outline: none;
+}
+
+.refract-flow .react-flow__node:focus-visible .thought-node {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.refract-flow .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid rgba(23, 32, 29, 0.1);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.refract-flow .react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  border-bottom-color: rgba(23, 32, 29, 0.1);
+}
+
+.refract-flow .react-flow__controls-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.refract-flow .react-flow__attribution {
+  padding: 2px 5px;
+  font-size: 8px;
+  opacity: 0.42;
+}
+
+.refract-flow .react-flow__attribution a {
+  color: var(--muted);
+}

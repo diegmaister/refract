@@ -1,15 +1,25 @@
 "use client";
 
-import { ChangeEvent, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 
 import { demoConversation } from "@/lib/mock/demo-conversation";
 
 type Feedback =
   | { kind: "idle"; message: "" }
-  | { kind: "error" | "success"; message: string };
+  | { kind: "error"; message: string };
 
-export function ConversationImport() {
-  const [conversation, setConversation] = useState("");
+type ConversationImportProps = {
+  conversation: string;
+  onConversationChange: (conversation: string) => void;
+  onRefract: () => void;
+};
+
+export function ConversationImport({
+  conversation,
+  onConversationChange,
+  onRefract,
+}: ConversationImportProps) {
   const [feedback, setFeedback] = useState<Feedback>({
     kind: "idle",
     message: "",
@@ -26,14 +36,11 @@ export function ConversationImport() {
       return;
     }
 
-    setFeedback({
-      kind: "success",
-      message: "Conversation ready to refract.",
-    });
+    onRefract();
   }
 
   function handleDemoLoad() {
-    setConversation(demoConversation);
+    onConversationChange(demoConversation);
     setFeedback({ kind: "idle", message: "" });
     textareaRef.current?.focus();
   }
@@ -45,7 +52,7 @@ export function ConversationImport() {
 
     try {
       const text = await file.text();
-      setConversation(text);
+      onConversationChange(text);
       setFeedback({ kind: "idle", message: "" });
       textareaRef.current?.focus();
     } catch {
@@ -70,7 +77,7 @@ export function ConversationImport() {
           name="conversation"
           value={conversation}
           onChange={(event) => {
-            setConversation(event.target.value);
+            onConversationChange(event.target.value);
             if (feedback.kind !== "idle") {
               setFeedback({ kind: "idle", message: "" });
             }
@@ -153,12 +160,6 @@ export function ConversationImport() {
       >
         {feedback.kind === "error" && (
           <p className="text-[#a44032]">{feedback.message}</p>
-        )}
-        {feedback.kind === "success" && (
-          <p className="inline-flex items-center gap-2 font-medium text-accent">
-            <span aria-hidden="true" className="size-1.5 bg-accent" />
-            {feedback.message}
-          </p>
         )}
       </div>
 
