@@ -1,4 +1,5 @@
 import type { AnalysisModelOutput } from "@/lib/refract/schemas/analysis";
+import { sanitizeDisplayTitle } from "@/lib/refract/sanitize-display-title";
 import type {
   ContextSeed,
   ContextSeedSelection,
@@ -40,7 +41,7 @@ function sanitizeSeed(
 
   return {
     id: seed.id,
-    title: seed.title.trim(),
+    title: sanitizeDisplayTitle(seed.title, seed.id),
     content: seed.content.trim(),
     category: seed.category,
     sourceMessageIds,
@@ -250,7 +251,7 @@ export function validateAndSanitizeAnalysis(
     return [
       {
         ...thought,
-        title: thought.title.trim(),
+        title: sanitizeDisplayTitle(thought.title, thought.id),
         summary: thought.summary.trim(),
         sourceMessageIds,
       },
@@ -297,7 +298,11 @@ export function validateAndSanitizeAnalysis(
   }
 
   return {
-    conversationTitle: modelOutput.conversationTitle.trim(),
+    conversationTitle: sanitizeDisplayTitle(
+      modelOutput.conversationTitle,
+      undefined,
+      "Conversation",
+    ),
     messages,
     thoughts,
     edges,

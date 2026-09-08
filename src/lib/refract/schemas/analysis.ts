@@ -4,14 +4,21 @@ const semanticIdSchema = z
   .string()
   .min(1)
   .max(80)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  .describe("Machine-safe internal identifier in lowercase kebab-case.");
 
 const sourceMessageIdsSchema = z.array(z.string().min(1)).min(1).max(100);
 
 const contextSeedSchema = z
   .object({
     id: semanticIdSchema,
-    title: z.string().min(1).max(120),
+    title: z
+      .string()
+      .min(1)
+      .max(120)
+      .describe(
+        "Concise, natural-language headline that is understandable without reading the content; never an ID or taxonomy label.",
+      ),
     content: z.string().min(1).max(1200),
     category: z.enum([
       "goal",
@@ -48,13 +55,25 @@ const contextSelectionSchema = z
 
 export const analysisModelOutputSchema = z
   .object({
-    conversationTitle: z.string().min(1).max(100),
+    conversationTitle: z
+      .string()
+      .min(1)
+      .max(100)
+      .describe(
+        "Natural, human-readable title describing the conversation's central subject.",
+      ),
     thoughts: z
       .array(
         z
           .object({
             id: semanticIdSchema,
-            title: z.string().min(1).max(100),
+            title: z
+              .string()
+              .min(1)
+              .max(100)
+              .describe(
+                "Natural 2–7 word concept name with spaces; never a machine ID.",
+              ),
             summary: z.string().min(1).max(800),
             type: z.enum([
               "idea",
