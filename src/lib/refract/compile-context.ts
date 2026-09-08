@@ -1,69 +1,117 @@
+import { getContinuationIntentInstruction } from "@/lib/refract/continuation-intent";
 import type {
-  ContextItemCategory,
   ContextItemSection,
   ContextSuggestion,
+  ContinuationIntentSelection,
   Thought,
 } from "@/types/refract";
 
-const sectionOrder: ContextItemSection[] = [
-  "current_goal",
-  "global_constraints",
-  "background_lineage",
-  "core_insights",
-  "related_ideas",
-  "previous_hypotheses",
-  "open_questions",
-  "excluded",
+type CompileContextInput = {
+  targetThought: Thought;
+  items: ContextSuggestion[];
+  continuationIntent: ContinuationIntentSelection;
+};
+
+type OutputSection = {
+  heading: string;
+  sourceSections: ContextItemSection[];
+  useBullets?: boolean;
+};
+
+const outputSections: OutputSection[] = [
+  {
+    heading: "Current objective",
+    sourceSections: ["current_goal"],
+  },
+  {
+    heading: "Global constraints",
+    sourceSections: ["global_constraints"],
+    useBullets: true,
+  },
+  {
+    heading: "Relevant background",
+    sourceSections: ["background_lineage"],
+    useBullets: true,
+  },
+  {
+    heading: "Established insights",
+    sourceSections: ["core_insights"],
+    useBullets: true,
+  },
+  {
+    heading: "Related developments",
+    sourceSections: ["related_ideas", "excluded"],
+    useBullets: true,
+  },
+  {
+    heading: "Open questions",
+    sourceSections: ["open_questions"],
+    useBullets: true,
+  },
 ];
 
-const sectionHeadings: Record<ContextItemSection, string> = {
-  current_goal: "Current goal",
-  global_constraints: "Global constraints",
-  background_lineage: "Background and lineage",
-  core_insights: "Core insights",
-  related_ideas: "Related ideas",
-  previous_hypotheses: "Previous hypotheses to reconsider",
-  open_questions: "Open questions",
-  excluded: "Reintroduced context",
-};
-
-const reconsiderLabels: Record<ContextItemCategory, string> = {
-  goal: "goal",
-  constraint: "constraint",
-  fact: "claim",
-  insight: "insight",
-  decision: "decision",
-  hypothesis: "hypothesis",
-  open_question: "question",
-};
-
 export function compileReconsideredItem(item: ContextSuggestion): string {
-  return `A previous discussion proposed: ${item.content} Treat this as a prior ${reconsiderLabels[item.category]} rather than an accepted conclusion, and independently reconsider it.`;
+  return `A previous discussion proposed: ${item.content}`;
 }
 
-export function compileContext(
-  targetThought: Thought,
-  items: ContextSuggestion[],
-): string {
-  const includedItems = items.filter((item) => item.state !== "drop");
-  const sections = sectionOrder.flatMap((section) => {
-    const sectionItems = includedItems.filter(
-      (item) => item.section === section,
+export function compileContext({
+  targetThought,
+  items,
+  continuationIntent,
+}: CompileContextInput): string {
+  const intentInstruction = getContinuationIntentInstruction(
+    continuationIntent,
+  );
+  const carriedItems = items.filter((item) => item.state === "carry");
+  const reconsideredItems = items.filter(
+    (item) => item.state === "reconsider",
+  );
+
+  const sections = outputSections.flatMap((section) => {
+    const sectionItems = carriedItems.filter((item) =>
+      section.sourceSections.includes(item.section),
     );
 
     if (sectionItems.length === 0) return [];
 
-    const content = sectionItems.map((item) => {
-      const compiledItem =
-        item.state === "reconsider"
-          ? compileReconsideredItem(item)
-          : item.content;
+    const content = sectionItems
+      .map((item) =>
+        section.useBullets ? `- ${item.content}` : item.content,
+      )
+      .join("\n");
 
-      return section === "current_goal" ? compiledItem : `- ${compiledItem}`;
-    });
-
-    return [`# ${sectionHeadings[section]}\n\n${content.join("\n")}`];
+    return [`# ${section.heading}\n\n${content}`];
   });
 
-  return `# Continue: ${targetThought.title}\n\n${sections.join("\n\n")}`;
+  if (reconsideredItems.length > 0) {
+    const reconsideredContent = reconsideredItems
+      .map((item) => `- ${compileReconsideredItem(item)}`)
+      .join("\n");
+
+    const openQuestionsIndex = sections.findIndex((section) =>
+      section.startsWith("# Open questions"),
+    );
+
+    sections.splice(
+      openQuestionsIndex === -1 ? sections.length : openQuestionsIndex,
+      0,
+      `# Hypotheses to reconsider\n\n${reconsideredContent}\n\nThese are prior hypotheses or conclusions, not accepted truth. Re-evaluate them independently when relevant.`,
+    );
+  }
+
+  const workingInstructions = [
+    "Continue from the current working state rather than reconstructing the previous conversation.",
+    "Treat carried goals, constraints, facts, and established insights as the current working context.",
+    "Treat items under \"Hypotheses to reconsider\" as unsettled rather than accepted truth.",
+    "Do not infer omitted details from unrelated branches that were intentionally dropped.",
+    `Apply this continuation intent: ${intentInstruction}`,
+  ].join("\n\n");
+
+  return [
+    `# Continue: ${targetThought.title}`,
+    "You are continuing a line of thought from an earlier AI conversation. Use the context below as the working state for this discussion.",
+    `# Continuation intent\n\n${intentInstruction}`,
+    ...sections,
+    `# Working instructions\n\n${workingInstructions}`,
+  ].join("\n\n");
 }

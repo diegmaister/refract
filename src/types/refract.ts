@@ -1,7 +1,13 @@
+export type MessageRole = "user" | "assistant" | "unknown";
+
+export type MessageRoleSource = "explicit" | "inferred" | "unknown";
+
 export type Message = {
   id: string;
   index: number;
-  role: "user" | "assistant";
+  role: MessageRole;
+  roleConfidence: number;
+  roleSource: MessageRoleSource;
   content: string;
 };
 
@@ -17,6 +23,10 @@ export type ThoughtType =
 
 export type ThoughtStatus = "active" | "parked" | "discarded" | "resolved";
 
+/**
+ * One semantic concept gathered across the transcript. Source messages are
+ * provenance occurrences and may be non-contiguous.
+ */
 export type Thought = {
   id: string;
   title: string;
@@ -37,10 +47,15 @@ export type EdgeType =
 export type ThoughtEdge = {
   source: string;
   target: string;
+  /** A conceptual relationship between semantic thoughts, not message order. */
   relation: EdgeType;
 };
 
 export type ContextItemState = "carry" | "drop" | "reconsider";
+
+export type ContextDensity = "light" | "balanced" | "rich";
+
+export type ContextPriority = "essential" | "recommended" | "supporting";
 
 export type ContextItemCategory =
   | "goal"
@@ -73,6 +88,8 @@ export type ContextItemSection =
 export type ContextSuggestion = ContextItem & {
   title: string;
   section: ContextItemSection;
+  priority: ContextPriority;
+  suggestedState: ContextItemState;
 };
 
 export type ContextPackage = {
@@ -88,6 +105,7 @@ export type ContextSeed = {
   category: ContextItemCategory;
   sourceMessageIds: string[];
   sourceThoughtId?: string;
+  priority: ContextPriority;
 };
 
 export type GlobalContext = {
@@ -112,4 +130,16 @@ export type ThoughtContextMetadata = {
 
 export type SuggestedContextPackage = Omit<ContextPackage, "items"> & {
   items: ContextSuggestion[];
+};
+
+export type ContinuationIntent =
+  | "continue"
+  | "open_questions"
+  | "challenge"
+  | "standby"
+  | "custom";
+
+export type ContinuationIntentSelection = {
+  type: ContinuationIntent;
+  customInstruction?: string;
 };

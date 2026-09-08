@@ -37,6 +37,16 @@ The graph is a navigation mechanism that helps the user answer:
 
 The core product value is context curation and compilation.
 
+## Semantic thought continuity
+
+Thoughts are semantic identities, not conversation branches.
+
+> Branching follows where a conversation splits; Refract follows what a thought is about, gathering every moment that idea reappears so you can continue it as one coherent thread.
+
+A thought may appear, disappear, and reappear anywhere in a transcript. Refract should gather those occurrences into one coherent `Thought` object when they refer to the same underlying idea.
+
+Chronology provides provenance. Chronology and conversation topology do not determine thought identity. Do not create separate thoughts merely because the same idea appears at different transcript positions or on different conversational branches.
+
 ---
 
 # MVP goal
@@ -176,7 +186,9 @@ The application revolves around these concepts:
 type Message = {
   id: string
   index: number
-  role: "user" | "assistant"
+  role: "user" | "assistant" | "unknown"
+  roleConfidence: number
+  roleSource: "explicit" | "inferred" | "unknown"
   content: string
 }
 
@@ -255,6 +267,23 @@ Do not trust model-generated JSON without validation.
 
 ---
 
+# Turn reconstruction and speaker origin
+
+Normalize raw transcripts into `Message[]` before semantic thought extraction. The normalized messages, rather than the undifferentiated raw transcript, are the evidence passed into later extraction stages.
+
+The deterministic reconstruction layer should remain conservative:
+
+* recognize explicit speaker labels such as User, Human, Assistant, and AI
+* preserve multiline content within a turn
+* keep unlabeled or ambiguous content with `role: "unknown"`
+* never invent alternating speakers merely to make a transcript look complete
+
+Speaker role is epistemic evidence, not truth. A user message often expresses a goal, preference, constraint, or acceptance. An assistant message often proposes, interprets, or recommends. These are useful priors, but neither role proves that a statement is correct, accepted, or still current.
+
+`roleSource` records whether the role was explicit, inferred, or unresolved. `roleConfidence` records confidence from 0 to 1. Inferred roles must remain visibly uncertain and must not be treated as ground truth downstream.
+
+---
+
 # Thought extraction philosophy
 
 Do not model every transcript message as a graph node.
@@ -274,6 +303,10 @@ The primary objects shown to users should be semantic thought objects such as:
 
 Every extracted thought should retain provenance through `sourceMessageIds`.
 
+`sourceMessageIds` may reference non-contiguous messages. They answer where the semantic thought appeared in the source conversation; they do not define the thought by a chronological span.
+
+Repeated mentions of the same underlying idea should be reconciled into one thought with all relevant evidence IDs instead of duplicated by time or transcript location.
+
 The user should eventually be able to inspect why Refract inferred something and see the original source messages.
 
 ---
@@ -284,7 +317,7 @@ The thought graph should:
 
 * show semantic thought objects
 * remain visually readable
-* communicate relationships between ideas
+* communicate conceptual relationships between ideas
 * support selecting a thought
 * help users orient themselves
 
@@ -294,6 +327,10 @@ The thought graph should NOT:
 * become a general-purpose graph editor
 * require users to manually organize nodes
 * prioritize perfect automatic layout over the core workflow
+* reconstruct the literal conversation tree
+* assume every thought has one chronological parent
+
+Graph relations such as `led_to`, `related_to`, `depends_on`, `contradicts`, `evolved_into`, and `branch_of` describe semantic relationships. Use `branch_of` only for a genuine conceptual branch, not merely because one message followed another.
 
 Do not spend excessive implementation effort on graph layout.
 
@@ -311,12 +348,27 @@ When a target thought is selected, relevant context may include:
 * global constraints
 * global facts
 * the target thought
-* ancestors / lineage
+* conceptual contributors / lineage
 * dependencies
 * relevant related thoughts
 * previous decisions
 * unresolved questions
 * semantically relevant insights
+
+Context building should follow this conceptual order:
+
+1. Gather all evidence occurrences belonging to the target thought, regardless of transcript position.
+2. Include relevant global context.
+3. Include useful conceptual development or lineage.
+4. Include dependencies.
+5. Include relevant related thoughts.
+6. Include established decisions and insights.
+7. Include unresolved questions.
+8. Exclude unrelated conversation branches regardless of when they occurred.
+
+Lineage represents meaningful conceptual development, not every node that appeared earlier on a chronological conversation branch. A compact UI may show one representative development path, but that path does not define the thought's identity or limit its provenance.
+
+Never define a target thought's context as everything downstream of the point where a conversation branch began.
 
 Do not treat semantic similarity as the only relevance signal.
 
@@ -390,6 +442,8 @@ Prefer clear information hierarchy over visual decoration.
 Provenance is a first-class requirement.
 
 Important extracted conclusions should be traceable to source messages.
+
+Use `sourceMessageIds` to recover both the original wording and its normalized speaker origin. Keep origin separate from later semantic status: who stated an idea is not the same as whether the user accepted, rejected, modified, or marked it for reconsideration.
 
 Do not generate fake source excerpts or fake message IDs in production code.
 
@@ -576,12 +630,25 @@ When environment variables are introduced, document their names in `.env.example
 When LLM integration is introduced:
 
 * call the provider server-side
+* pass normalized messages into semantic extraction rather than relying only on the raw transcript
 * request structured output
 * validate results with Zod
 * handle malformed responses
 * keep provider-specific code behind a small abstraction
 * preserve source-message provenance
 * keep prompts versionable and easy to inspect
+* detect candidate thoughts across the entire transcript
+* reconcile repeated mentions of the same underlying idea
+* merge recurring evidence into one thought when appropriate
+* avoid duplicate thoughts caused only by temporal separation
+* preserve every supporting source-message ID
+* separate semantic identity from chronological position
+* treat explicit speaker labels as strong evidence, not proof of semantic authority
+* infer user, assistant, or unknown only when deterministic reconstruction cannot resolve the role and the distinction is useful
+* use discourse structure, question-and-answer relationships, formatting, and surrounding turns as inference evidence
+* return a confidence value for inferred roles and preserve `unknown` when the evidence is weak
+* never treat an inferred speaker role as ground truth
+* distinguish who introduced a claim from whether it was later accepted, rejected, modified, or reopened for reconsideration
 
 Do not call provider APIs directly from client components.
 
@@ -721,4 +788,3 @@ and
 choose the simplest clean version.
 
 Refract should demonstrate a strong product idea through a convincing end-to-end experience, not through infrastructure complexity.
-

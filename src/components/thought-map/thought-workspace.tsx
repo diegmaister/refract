@@ -9,12 +9,16 @@ import { ThoughtMap } from "./thought-map";
 
 type ThoughtWorkspaceProps = {
   selectedThoughtId: string;
+  messageCount: number;
+  uncertainRoleCount: number;
   onSelectThought: (thoughtId: string) => void;
   onBuildContext: () => void;
 };
 
 export function ThoughtWorkspace({
   selectedThoughtId,
+  messageCount,
+  uncertainRoleCount,
   onSelectThought,
   onBuildContext,
 }: ThoughtWorkspaceProps) {
@@ -41,11 +45,23 @@ export function ThoughtWorkspace({
             </p>
           </div>
           <p className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+            {messageCount} turns
+            <span aria-hidden="true" className="mx-2 text-ink/20">
+              ·
+            </span>
             {demoThoughts.length} thoughts
             <span aria-hidden="true" className="mx-2 text-ink/20">
               ·
             </span>
             {demoThoughtEdges.length} relationships
+            {uncertainRoleCount > 0 && (
+              <>
+                <span aria-hidden="true" className="mx-2 text-ink/20">
+                  ·
+                </span>
+                {uncertainRoleCount} uncertain
+              </>
+            )}
           </p>
         </div>
 

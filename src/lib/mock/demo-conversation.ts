@@ -1,3 +1,6 @@
+import { reconstructTurns } from "@/lib/refract/reconstruct-turns";
+import type { Message } from "@/types/refract";
+
 export const demoConversation = `User: I need an idea for my interview project, and I am working under a tight deadline. It needs to show product judgment and end-to-end engineering—not just polished UI. I want something grounded in a problem I have actually experienced so I can defend the decisions clearly.
 
 Assistant: Start with behaviors you keep noticing in your own life. We can evaluate each direction by the strength of the user problem, the clarity of the workflow, and whether a focused prototype can communicate the full idea within the interview timeline.
@@ -14,6 +17,8 @@ User: There was also an idea called Overkill for structured purchasing research.
 
 Assistant: Exactly. The transcript is evidence of several semantic threads rather than one coherent conversation. Some branches contribute important constraints or insights, while others only share vocabulary. If all of them remain inherited context, stale assumptions and unrelated details can influence whatever comes next.
 
-User: That feels like the real project. Refract could reconstruct those thoughts, show how they relate, and let me choose one continuation goal. Messages would remain available as provenance, but ideas would become the interface. I could decide what information should carry forward instead of copying the whole chat.
+User: That feels like the real project. The same need to recover an idea after unrelated detours has resurfaced in Rabbit Hole, the purchasing tangent, and this context discussion. Refract could reconstruct those thoughts, show how they relate, and let me choose one continuation goal. Messages would remain available as provenance, but ideas would become the interface. I could decide what information should carry forward instead of copying the whole chat.
 
 Assistant: That creates a clear end-to-end workflow: import a messy conversation, recover the ideas and relationships, select a thought, review suggested context, then carry a smaller package into a new chat. The user should also be able to drop irrelevant branches or mark an earlier conclusion for reconsideration so the next model does not inherit it as settled truth.`;
+
+export const demoMessages: Message[] = reconstructTurns(demoConversation);

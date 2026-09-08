@@ -1,5 +1,7 @@
 import { compileContext } from "@/lib/refract/compile-context";
+import { applyContextDensity } from "@/lib/refract/context-density";
 import type {
+  ContextDensity,
   ContextSeed,
   ContextSeedSelection,
   ContextSuggestion,
@@ -16,15 +18,18 @@ type BuildContextPackageInput = {
   edges: ThoughtEdge[];
   globalContext: GlobalContext;
   metadata: ThoughtContextMetadata[];
+  density?: ContextDensity;
 };
 
-const lineageRelations = new Set<ThoughtEdge["relation"]>([
+const conceptualDevelopmentRelations = new Set<ThoughtEdge["relation"]>([
   "branch_of",
   "led_to",
   "evolved_into",
 ]);
 
-function findLongestLineage(
+// This chooses one compact conceptual path for display. It does not determine
+// the target thought's identity or restrict its source-message provenance.
+function findRepresentativeConceptualLineage(
   targetThoughtId: string,
   edges: ThoughtEdge[],
 ): string[] {
@@ -32,32 +37,33 @@ function findLongestLineage(
     if (visited.has(thoughtId)) return [thoughtId];
 
     const nextVisited = new Set(visited).add(thoughtId);
-    const parents = edges
+    const contributors = edges
       .filter(
         (edge) =>
-          edge.target === thoughtId && lineageRelations.has(edge.relation),
+          edge.target === thoughtId &&
+          conceptualDevelopmentRelations.has(edge.relation),
       )
       .map((edge) => edge.source);
 
-    if (parents.length === 0) return [thoughtId];
+    if (contributors.length === 0) return [thoughtId];
 
-    const parentPaths = parents.map((parentId) =>
-      visit(parentId, nextVisited),
+    const contributorPaths = contributors.map((contributorId) =>
+      visit(contributorId, nextVisited),
     );
-    const longestParentPath = parentPaths.reduce((longest, path) =>
+    const longestContributorPath = contributorPaths.reduce((longest, path) =>
       path.length > longest.length ? path : longest,
     );
 
-    return [...longestParentPath, thoughtId];
+    return [...longestContributorPath, thoughtId];
   }
 
   return visit(targetThoughtId, new Set());
 }
 
-function findReachableThoughts(
+function findConceptuallyConnectedThoughts(
   startThoughtId: string,
   edges: ThoughtEdge[],
-  direction: "ancestors" | "descendants",
+  direction: "contributors" | "developments",
 ): Set<string> {
   const reachable = new Set<string>();
   const queue = [startThoughtId];
@@ -67,12 +73,12 @@ function findReachableThoughts(
     if (!currentThoughtId) continue;
 
     for (const edge of edges) {
-      if (!lineageRelations.has(edge.relation)) continue;
+      if (!conceptualDevelopmentRelations.has(edge.relation)) continue;
 
       const nextThoughtId =
-        direction === "ancestors" && edge.target === currentThoughtId
+        direction === "contributors" && edge.target === currentThoughtId
           ? edge.source
-          : direction === "descendants" && edge.source === currentThoughtId
+          : direction === "developments" && edge.source === currentThoughtId
             ? edge.target
             : undefined;
 
@@ -99,18 +105,22 @@ function getRelationshipReason(
     return "Included because this was established within the selected thought.";
   }
 
-  const ancestors = findReachableThoughts(targetThought.id, edges, "ancestors");
-  if (ancestors.has(seed.sourceThoughtId)) {
-    return "Included because this earlier thought contributed to the selected thought's lineage.";
-  }
-
-  const descendants = findReachableThoughts(
+  const contributors = findConceptuallyConnectedThoughts(
     targetThought.id,
     edges,
-    "descendants",
+    "contributors",
   );
-  if (descendants.has(seed.sourceThoughtId)) {
-    return "Included because this later thought developed a useful consequence of the selected idea.";
+  if (contributors.has(seed.sourceThoughtId)) {
+    return "Included because this thought conceptually contributed to the selected thought's development.";
+  }
+
+  const developments = findConceptuallyConnectedThoughts(
+    targetThought.id,
+    edges,
+    "developments",
+  );
+  if (developments.has(seed.sourceThoughtId)) {
+    return "Included because this thought develops a useful consequence of the selected idea.";
   }
 
   const isDependency = edges.some(
@@ -150,6 +160,8 @@ function createSuggestion(
     sourceMessageIds: [...selection.seed.sourceMessageIds],
     section: selection.section,
     state: selection.state,
+    suggestedState: selection.state,
+    priority: selection.seed.priority,
     inclusionReason:
       selection.inclusionReason ??
       getRelationshipReason(selection.seed, targetThought, edges),
@@ -164,6 +176,8 @@ function createGlobalSuggestion(seed: ContextSeed): ContextSuggestion {
     sourceMessageIds: [...seed.sourceMessageIds],
     section: "global_constraints",
     state: "carry",
+    suggestedState: "carry",
+    priority: "essential",
     inclusionReason: isGoal
       ? "Included because this thought is being evaluated as part of the global interview-project goal."
       : "Included because this global constraint applies even when it is semantically dissimilar to the selected thought.",
@@ -178,7 +192,10 @@ function createLineageSuggestion(
 
   return {
     id: `${targetThought.id}-lineage`,
-    title: "Thought lineage",
+    title: `${targetThought.title} evolved from ${lineage
+      .slice(Math.max(0, lineage.length - 4), -1)
+      .map((thought) => thought.title)
+      .join(" → ")}`,
     content: `${targetThought.title} developed through this line of thinking: ${lineage
       .map((thought) => thought.title)
       .join(" → ")}.`,
@@ -188,8 +205,10 @@ function createLineageSuggestion(
       ...new Set(lineage.flatMap((thought) => thought.sourceMessageIds)),
     ],
     inclusionReason:
-      "Included because these ancestor relationships establish how the selected thought emerged.",
+      "Included because these conceptual relationships establish how the selected thought developed.",
     state: "carry",
+    suggestedState: "carry",
+    priority: lineage.length > 2 ? "essential" : "recommended",
   };
 }
 
@@ -199,6 +218,7 @@ export function buildContextPackage({
   edges,
   globalContext,
   metadata,
+  density = "balanced",
 }: BuildContextPackageInput): SuggestedContextPackage {
   const targetThought = thoughts.find(
     (thought) => thought.id === targetThoughtId,
@@ -235,7 +255,10 @@ export function buildContextPackage({
     },
   );
 
-  const lineageIds = findLongestLineage(targetThoughtId, edges);
+  const lineageIds = findRepresentativeConceptualLineage(
+    targetThoughtId,
+    edges,
+  );
   const lineageThoughts = lineageIds.flatMap((thoughtId) => {
     const thought = thoughts.find((candidate) => candidate.id === thoughtId);
     return thought ? [thought] : [];
@@ -245,7 +268,7 @@ export function buildContextPackage({
     targetThought,
   );
 
-  const items = [
+  const inventory = [
     ...targetMetadata.context
       .filter((selection) => selection.section === "current_goal")
       .map((selection) => createSuggestion(selection, targetThought, edges)),
@@ -255,10 +278,15 @@ export function buildContextPackage({
       .filter((selection) => selection.section !== "current_goal")
       .map((selection) => createSuggestion(selection, targetThought, edges)),
   ];
+  const items = applyContextDensity(inventory, density);
 
   return {
     targetThoughtId,
     items,
-    compiledContext: compileContext(targetThought, items),
+    compiledContext: compileContext({
+      targetThought,
+      items,
+      continuationIntent: { type: "continue" },
+    }),
   };
 }

@@ -10,6 +10,7 @@ import {
   demoSelectedThoughtId,
   demoThoughts,
 } from "@/lib/mock/demo-analysis";
+import type { Message } from "@/types/refract";
 
 type AppView = "import" | "workspace" | "context";
 
@@ -46,6 +47,7 @@ function ProductMark() {
 export function RefractApp() {
   const [view, setView] = useState<AppView>("import");
   const [conversation, setConversation] = useState("");
+  const [normalizedMessages, setNormalizedMessages] = useState<Message[]>([]);
   const [selectedThoughtId, setSelectedThoughtId] = useState(
     demoSelectedThoughtId,
   );
@@ -135,7 +137,8 @@ export function RefractApp() {
             <ConversationImport
               conversation={conversation}
               onConversationChange={setConversation}
-              onRefract={() => {
+              onRefract={(messages) => {
+                setNormalizedMessages(messages);
                 setSelectedThoughtId(demoSelectedThoughtId);
                 setView("workspace");
               }}
@@ -177,6 +180,11 @@ export function RefractApp() {
       ) : view === "workspace" ? (
         <ThoughtWorkspace
           selectedThoughtId={selectedThought.id}
+          messageCount={normalizedMessages.length}
+          uncertainRoleCount={
+            normalizedMessages.filter((message) => message.role === "unknown")
+              .length
+          }
           onSelectThought={setSelectedThoughtId}
           onBuildContext={() => setView("context")}
         />

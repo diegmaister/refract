@@ -25,7 +25,7 @@ export const demoThoughts: Thought[] = [
       "Explore an AI-assisted music experience that understands intent and dynamically manages a listening queue.",
     type: "idea",
     status: "parked",
-    sourceMessageIds: ["message-3", "message-4", "message-5"],
+    sourceMessageIds: ["message-3", "message-4"],
   },
   {
     id: "rabbit-hole",
@@ -34,7 +34,7 @@ export const demoThoughts: Thought[] = [
       "Explore a learning interface designed around branching curiosity rather than a linear sequence of answers.",
     type: "research",
     status: "parked",
-    sourceMessageIds: ["message-5", "message-6"],
+    sourceMessageIds: ["message-5", "message-6", "message-9"],
   },
   {
     id: "overkill",
@@ -52,7 +52,12 @@ export const demoThoughts: Thought[] = [
       "Human exploration naturally branches, while conventional chat interfaces flatten that process into a linear transcript.",
     type: "hypothesis",
     status: "active",
-    sourceMessageIds: ["message-5", "message-6", "message-8"],
+    sourceMessageIds: [
+      "message-5",
+      "message-6",
+      "message-8",
+      "message-9",
+    ],
   },
   {
     id: "context-pollution",
@@ -62,7 +67,6 @@ export const demoThoughts: Thought[] = [
     type: "fact",
     status: "active",
     sourceMessageIds: [
-      "message-3",
       "message-5",
       "message-7",
       "message-8",
@@ -77,10 +81,8 @@ export const demoThoughts: Thought[] = [
     type: "idea",
     status: "active",
     sourceMessageIds: [
-      "message-3",
       "message-5",
       "message-7",
-      "message-8",
       "message-9",
       "message-10",
     ],

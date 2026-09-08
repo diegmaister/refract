@@ -1,5 +1,6 @@
 import type {
   ContextItemCategory,
+  ContextPriority,
   ContextItemSection,
   ContextItemState,
   ContextSeed,
@@ -15,6 +16,7 @@ function seed(
   category: ContextItemCategory,
   sourceMessageIds: string[],
   sourceThoughtId?: string,
+  priority: ContextPriority = "recommended",
 ): ContextSeed {
   return {
     id,
@@ -23,6 +25,7 @@ function seed(
     category,
     sourceMessageIds,
     sourceThoughtId,
+    priority,
   };
 }
 
@@ -37,21 +40,21 @@ function select(
 
 const globalProjectGoal = seed(
   "global-project-goal",
-  "Interview project framing",
+  "Build a defensible interview project",
   "Build a compelling interview project grounded in a real, defensible user problem.",
   "goal",
   ["message-1", "message-2"],
 );
 const productThinkingConstraint = seed(
   "global-product-thinking",
-  "Product-thinking requirement",
+  "Demo must prove product thinking",
   "The project should demonstrate product thinking, not only polished UI.",
   "constraint",
   ["message-1", "message-2"],
 );
 const engineeringConstraint = seed(
   "global-engineering",
-  "End-to-end engineering requirement",
+  "Demo must show end-to-end engineering",
   "The project should demonstrate an end-to-end engineering workflow.",
   "constraint",
   ["message-1", "message-2"],
@@ -94,6 +97,7 @@ const interviewGoal = seed(
   "goal",
   ["message-1", "message-2"],
   "interview-project",
+  "essential",
 );
 const groundedProblem = seed(
   "grounded-problem",
@@ -102,6 +106,7 @@ const groundedProblem = seed(
   "decision",
   ["message-1", "message-2"],
   "interview-project",
+  "essential",
 );
 const clearWorkflow = seed(
   "clear-workflow",
@@ -119,6 +124,7 @@ const auxGoal = seed(
   "goal",
   ["message-3", "message-4"],
   "aux",
+  "essential",
 );
 const auxMoodInsight = seed(
   "aux-mood-insight",
@@ -130,11 +136,12 @@ const auxMoodInsight = seed(
 );
 const auxQueueInsight = seed(
   "aux-queue-insight",
-  "Dynamic queue management",
+  "Intent-aware queues may beat an AI DJ",
   "Intent-aware queue management may be more valuable than a generic AI DJ wrapper.",
   "insight",
   ["message-3", "message-4"],
   "aux",
+  "essential",
 );
 const auxQueueHypothesis = seed(
   "aux-queue-hypothesis",
@@ -146,19 +153,21 @@ const auxQueueHypothesis = seed(
 );
 const auxBehaviorQuestion = seed(
   "aux-behavior-question",
-  "Core listening behavior",
+  "Choose the core listening behavior",
   "What is the core user behavior AUX should support: setting intent, responding to a room, or directly shaping the queue?",
   "open_question",
   ["message-3", "message-4"],
   "aux",
+  "essential",
 );
 const auxCapabilitiesQuestion = seed(
   "aux-capabilities-question",
-  "Required capabilities",
+  "Define the capabilities a convincing AUX needs",
   "Which music, feedback, and sensing capabilities would a convincing AUX prototype actually require?",
   "open_question",
   ["message-3", "message-4"],
   "aux",
+  "supporting",
 );
 
 const rabbitGoal = seed(
@@ -166,16 +175,18 @@ const rabbitGoal = seed(
   "Rabbit Hole product direction",
   "Explore a nonlinear learning experience that lets people follow branching curiosity without losing their original question.",
   "goal",
-  ["message-5", "message-6"],
+  ["message-5", "message-6", "message-9"],
   "rabbit-hole",
+  "essential",
 );
 const curiosityBranches = seed(
   "curiosity-branches",
-  "Curiosity branches naturally",
+  "Curiosity branches beyond linear paths",
   "Curiosity rarely follows a single linear sequence.",
   "insight",
   ["message-5", "message-6"],
   "rabbit-hole",
+  "essential",
 );
 const preserveOriginalQuestion = seed(
   "preserve-original-question",
@@ -184,6 +195,7 @@ const preserveOriginalQuestion = seed(
   "insight",
   ["message-5"],
   "rabbit-hole",
+  "essential",
 );
 const explorationStructure = seed(
   "exploration-structure",
@@ -195,19 +207,21 @@ const explorationStructure = seed(
 );
 const reconnectQuestion = seed(
   "reconnect-question",
-  "Reconnect branches",
+  "Reconnect detours to the original question",
   "How should exploratory branches reconnect to the original learning question?",
   "open_question",
   ["message-5", "message-6"],
   "rabbit-hole",
+  "essential",
 );
 const distractionQuestion = seed(
   "distraction-question",
-  "Exploration or distraction",
+  "Distinguish productive exploration from distraction",
   "When does productive exploration become distraction?",
   "open_question",
   ["message-5", "message-6"],
   "rabbit-hole",
+  "supporting",
 );
 
 const overkillGoal = seed(
@@ -217,6 +231,7 @@ const overkillGoal = seed(
   "goal",
   ["message-7", "message-8"],
   "overkill",
+  "essential",
 );
 const comparisonStructure = seed(
   "comparison-structure",
@@ -225,6 +240,7 @@ const comparisonStructure = seed(
   "insight",
   ["message-7", "message-8"],
   "overkill",
+  "essential",
 );
 const weightedCriteria = seed(
   "weighted-criteria",
@@ -249,10 +265,11 @@ const explicitDecisionState = seed(
   "decision",
   ["message-7", "message-8"],
   "overkill",
+  "essential",
 );
 const purchasingBreadthQuestion = seed(
   "purchasing-breadth-question",
-  "Breadth of the problem",
+  "Test whether purchasing research is broad enough",
   "Is purchasing research broad enough to support a compelling standalone product?",
   "open_question",
   ["message-7"],
@@ -260,11 +277,12 @@ const purchasingBreadthQuestion = seed(
 );
 const externalResearchQuestion = seed(
   "external-research-question",
-  "External research burden",
+  "Estimate Overkill's external research burden",
   "How much external product research would Overkill need to become genuinely useful?",
   "open_question",
   ["message-7"],
   "overkill",
+  "supporting",
 );
 const confidenceQuestion = seed(
   "confidence-question",
@@ -273,6 +291,7 @@ const confidenceQuestion = seed(
   "open_question",
   ["message-7", "message-8"],
   "overkill",
+  "essential",
 );
 
 const nonlinearGoal = seed(
@@ -280,40 +299,45 @@ const nonlinearGoal = seed(
   "Nonlinear Thinking direction",
   "Explore the broader idea that human thinking branches while conventional chat remains linear.",
   "goal",
-  ["message-5", "message-6", "message-8"],
+  ["message-5", "message-6", "message-8", "message-9"],
   "nonlinear-thinking",
+  "essential",
 );
 const humanExplorationBranches = seed(
   "human-exploration-branches",
-  "Human exploration branches",
+  "Human thought branches beyond transcripts",
   "Human exploration naturally creates branches, detours, and returns.",
   "insight",
   ["message-5", "message-6"],
   "nonlinear-thinking",
+  "essential",
 );
 const linearTranscriptsHideStructure = seed(
   "linear-transcripts-hide-structure",
-  "Linear transcripts hide structure",
+  "Linear transcripts hide conceptual relationships",
   "Chronological transcripts preserve messages but obscure the conceptual structure connecting them.",
   "insight",
   ["message-6", "message-8"],
   "nonlinear-thinking",
+  "essential",
 );
 const primaryInterfaceQuestion = seed(
   "primary-interface-question",
-  "Primary interface",
+  "Choose the primary nonlinear-thinking interface",
   "What should the primary interface for nonlinear thinking be?",
   "open_question",
   ["message-6"],
   "nonlinear-thinking",
+  "essential",
 );
 const visibleStructureQuestion = seed(
   "visible-structure-question",
-  "Visible structure",
+  "Decide how much inferred structure users see",
   "How much inferred structure should users see while they are thinking?",
   "open_question",
   ["message-6"],
   "nonlinear-thinking",
+  "supporting",
 );
 
 const pollutionGoal = seed(
@@ -321,28 +345,31 @@ const pollutionGoal = seed(
   "Context Pollution direction",
   "Understand how long AI conversations accumulate irrelevant, stale, or misleading inherited context.",
   "goal",
-  ["message-7", "message-8", "message-9"],
+  ["message-5", "message-7", "message-8", "message-9"],
   "context-pollution",
+  "essential",
 );
 const unrelatedBranchesPersist = seed(
   "unrelated-branches-persist",
-  "Unrelated branches persist",
+  "Unrelated branches survive in working context",
   "Unrelated conversational branches remain in the model's working context.",
   "insight",
   ["message-7", "message-8"],
   "context-pollution",
+  "essential",
 );
 const discardedAssumptionsPersist = seed(
   "discarded-assumptions-persist",
-  "Discarded assumptions persist",
+  "Discarded assumptions can survive in context",
   "Rejected or stale assumptions may continue to be inherited as though they were still valid.",
   "insight",
   ["message-8"],
   "context-pollution",
+  "essential",
 );
 const dissimilarConstraintsMatter = seed(
   "dissimilar-constraints-matter",
-  "Dissimilar constraints still matter",
+  "Global constraints survive semantic dissimilarity",
   "Global constraints can remain important even when their wording is semantically dissimilar to the selected idea.",
   "insight",
   ["message-8", "message-9"],
@@ -350,19 +377,21 @@ const dissimilarConstraintsMatter = seed(
 );
 const relevanceQuestion = seed(
   "relevance-question",
-  "Relevance calculation",
+  "Relevance must combine structure and constraints",
   "How should relevance account for lineage, dependencies, related thoughts, and global constraints?",
   "open_question",
   ["message-8", "message-9"],
   "context-pollution",
+  "essential",
 );
 const staleAssumptionQuestion = seed(
   "stale-assumption-question",
-  "Detect stale assumptions",
+  "Detect stale assumptions before inheritance",
   "How should stale or rejected assumptions be detected before context is inherited?",
   "open_question",
   ["message-8"],
   "context-pollution",
+  "supporting",
 );
 
 const refractGoal = seed(
@@ -370,16 +399,18 @@ const refractGoal = seed(
   "Current Refract product goal",
   "Build a context-engineering layer that reconstructs thought structure and lets users control what the next conversation inherits.",
   "goal",
-  ["message-9", "message-10"],
+  ["message-5", "message-7", "message-9", "message-10"],
   "refract",
+  "essential",
 );
 const messagesAsEvidence = seed(
   "messages-as-evidence",
-  "Messages are evidence",
+  "Ideas are primary; messages preserve evidence",
   "Individual messages should remain provenance while higher-level ideas become the primary objects users navigate.",
   "insight",
   ["message-8", "message-9"],
   "refract",
+  "essential",
 );
 const noManualGraph = seed(
   "no-manual-graph",
@@ -391,11 +422,12 @@ const noManualGraph = seed(
 );
 const goalSpecificContext = seed(
   "goal-specific-context",
-  "Compile for a continuation goal",
+  "Build context for the thought being continued",
   "Context should be compiled for a specific continuation goal instead of copying the entire transcript.",
   "decision",
   ["message-9", "message-10"],
   "refract",
+  "essential",
 );
 const graphPrimaryHypothesis = seed(
   "graph-primary-hypothesis",
@@ -407,7 +439,7 @@ const graphPrimaryHypothesis = seed(
 );
 const sidecarQuestion = seed(
   "sidecar-question",
-  "Sidecar or full interface",
+  "Choose context layer or full interface",
   "Should Refract remain a context layer between existing AI tools or eventually become a complete AI interface?",
   "open_question",
   ["message-9", "message-10"],
@@ -415,24 +447,25 @@ const sidecarQuestion = seed(
 );
 const evolutionQuestion = seed(
   "evolution-question",
-  "Context evolution",
+  "Define how inherited context evolves",
   "How should inherited context update as the user continues thinking over time?",
   "open_question",
   ["message-10"],
   "refract",
+  "supporting",
 );
 
 const nonlinearLaterInsight = seed(
   "nonlinear-later-insight",
-  "Nonlinear Thinking",
+  "Rabbit Hole generalized into nonlinear thinking",
   "Nonlinear Thinking generalized Rabbit Hole's branching-curiosity insight beyond the learning use case.",
   "insight",
-  ["message-5", "message-6", "message-8"],
+  ["message-5", "message-6", "message-8", "message-9"],
   "nonlinear-thinking",
 );
 const refractRabbitApplication = seed(
   "refract-rabbit-application",
-  "Later application in Refract",
+  "Refract applies branching to AI continuation",
   "Refract later applied the branching-thinking insight to the problem of continuing long AI conversations.",
   "insight",
   ["message-9", "message-10"],
@@ -440,7 +473,7 @@ const refractRabbitApplication = seed(
 );
 const refractExplicitState = seed(
   "refract-explicit-state",
-  "Later explicit-state insight",
+  "Useful state should stay explicit",
   "Refract later generalized Overkill's insight that useful state should be explicit rather than buried in conversational history.",
   "insight",
   ["message-7", "message-9", "message-10"],
@@ -448,7 +481,7 @@ const refractExplicitState = seed(
 );
 const pollutionConsequence = seed(
   "pollution-consequence",
-  "Context Pollution",
+  "Flattened branches create context pollution",
   "Context Pollution emerged as a consequence of flattening multiple conceptual branches into one inherited transcript.",
   "insight",
   ["message-7", "message-8"],
@@ -464,7 +497,7 @@ const refractSolution = seed(
 );
 const rabbitContribution = seed(
   "rabbit-contribution",
-  "Rabbit Hole",
+  "Rabbit Hole preserves connected detours",
   "Rabbit Hole showed that curiosity branches away from an original question while remaining connected to it.",
   "insight",
   ["message-5", "message-6"],
@@ -472,7 +505,7 @@ const rabbitContribution = seed(
 );
 const overkillContribution = seed(
   "overkill-contribution",
-  "Overkill",
+  "Overkill makes decisions explicit",
   "Overkill highlighted the value of explicit criteria, state, and decisions instead of relying only on conversational history.",
   "insight",
   ["message-7", "message-8"],
@@ -559,6 +592,7 @@ export const demoThoughtContextMetadata: ThoughtContextMetadata[] = [
           "open_question",
           ["message-1", "message-2"],
           "interview-project",
+          "essential",
         ),
         "open_questions",
       ),
@@ -570,6 +604,7 @@ export const demoThoughtContextMetadata: ThoughtContextMetadata[] = [
           "open_question",
           ["message-1", "message-2"],
           "interview-project",
+          "supporting",
         ),
         "open_questions",
       ),

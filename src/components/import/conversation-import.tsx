@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
 import { demoConversation } from "@/lib/mock/demo-conversation";
+import { reconstructTurns } from "@/lib/refract/reconstruct-turns";
+import type { Message } from "@/types/refract";
 
 type Feedback =
   | { kind: "idle"; message: "" }
@@ -12,7 +14,7 @@ type Feedback =
 type ConversationImportProps = {
   conversation: string;
   onConversationChange: (conversation: string) => void;
-  onRefract: () => void;
+  onRefract: (messages: Message[]) => void;
 };
 
 export function ConversationImport({
@@ -36,7 +38,7 @@ export function ConversationImport({
       return;
     }
 
-    onRefract();
+    onRefract(reconstructTurns(conversation));
   }
 
   function handleDemoLoad() {

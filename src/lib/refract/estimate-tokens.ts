@@ -9,14 +9,35 @@ export function estimateTokens(content: string): number {
 }
 
 export function calculatePercentRemoved(
-  originalTokens: number,
-  finalTokens: number,
+  baselineTokens: number,
+  resultTokens: number,
 ): number {
-  if (originalTokens <= 0) return 0;
+  if (baselineTokens <= 0) return 0;
 
   const reduction = Math.round(
-    ((originalTokens - finalTokens) / originalTokens) * 100,
+    ((baselineTokens - resultTokens) / baselineTokens) * 100,
   );
 
   return Math.max(0, reduction);
+}
+
+export type TokenReduction = {
+  removedTokens: number;
+  percentRemoved: number;
+  hasReduction: boolean;
+};
+
+export function calculateTokenReduction(
+  baselineTokens: number,
+  resultTokens: number,
+): TokenReduction {
+  const hasReduction = baselineTokens > 0 && resultTokens < baselineTokens;
+
+  return {
+    removedTokens: hasReduction ? baselineTokens - resultTokens : 0,
+    percentRemoved: hasReduction
+      ? calculatePercentRemoved(baselineTokens, resultTokens)
+      : 0,
+    hasReduction,
+  };
 }

@@ -1,48 +1,79 @@
+import type { ContextDensity } from "@/types/refract";
+
 type ContextMetricsProps = {
-  originalTokens: number;
-  suggestedTokens: number;
-  finalTokens: number;
+  fullConversationTokens: number;
+  suggestedContextTokens: number;
+  currentContextTokens: number;
+  removedTokens: number;
   percentRemoved: number;
+  hasReduction: boolean;
+  carryCount: number;
+  reconsiderCount: number;
+  dropCount: number;
+  density: ContextDensity;
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 export function ContextMetrics({
-  originalTokens,
-  suggestedTokens,
-  finalTokens,
+  fullConversationTokens,
+  suggestedContextTokens,
+  currentContextTokens,
+  removedTokens,
   percentRemoved,
+  hasReduction,
+  carryCount,
+  reconsiderCount,
+  dropCount,
+  density,
 }: ContextMetricsProps) {
-  const metrics = [
-    { label: "Original conversation", value: originalTokens },
-    { label: "Suggested context", value: suggestedTokens },
-    { label: "Your final context", value: finalTokens },
-  ];
-
   return (
-    <div>
-      <div className="grid grid-cols-2 border border-ink/10 bg-surface sm:grid-cols-4">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="border-b border-r border-ink/10 px-4 py-3 last:border-r-0 sm:border-b-0"
-          >
-            <p className="text-[10px] leading-4 text-muted">{metric.label}</p>
-            <p className="mt-1 font-mono text-sm font-medium text-ink">
-              {numberFormatter.format(metric.value)} tokens
-              <span className="ml-1 text-[9px] font-normal text-muted">est.</span>
-            </p>
-          </div>
-        ))}
-        <div className="px-4 py-3">
-          <p className="text-[10px] leading-4 text-muted">Reduction</p>
-          <p className="mt-1 font-mono text-sm font-medium text-accent">
-            {percentRemoved}% removed
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Context size estimates"
+    >
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono tracking-[-0.02em]">
+        <p className="text-[13px] font-medium text-ink sm:text-sm">
+          <span className="mr-1.5 text-[9px] font-normal uppercase tracking-[0.08em] text-muted">
+            Full chat
+          </span>
+          {numberFormatter.format(fullConversationTokens)}
+          <span aria-hidden="true" className="mx-2 text-muted">
+            →
+          </span>
+          <span className="mr-1.5 text-[9px] font-normal uppercase tracking-[0.08em] text-muted">
+            Your context
+          </span>
+          {numberFormatter.format(currentContextTokens)} tokens est.
+        </p>
+        {hasReduction ? (
+          <p className="text-[11px] font-medium text-accent sm:text-xs">
+            ↓ {numberFormatter.format(removedTokens)} tokens · {percentRemoved}%
+            removed
           </p>
-        </div>
+        ) : (
+          <p className="text-[11px] font-normal text-muted">
+            Your context is {numberFormatter.format(currentContextTokens)} tokens
+            est.
+          </p>
+        )}
       </div>
-      <p className="mt-2 text-[10px] text-muted">
-        Estimates use approximately four characters per token.
+      <p className="mt-1 text-[10px] text-muted sm:text-[11px]">
+        <span className="capitalize">{density}</span> suggested context{" "}
+        {numberFormatter.format(suggestedContextTokens)} tokens est.
+        <span aria-hidden="true" className="mx-2 text-ink/20">
+          ·
+        </span>
+        Your selection: {carryCount} carry
+        <span aria-hidden="true" className="mx-1.5 text-ink/20">
+          ·
+        </span>
+        {reconsiderCount} reconsider
+        <span aria-hidden="true" className="mx-1.5 text-ink/20">
+          ·
+        </span>
+        {dropCount} dropped
       </p>
     </div>
   );
