@@ -1,9 +1,4 @@
-"use client";
-
-import { useState } from "react";
-
 import {
-  demoSelectedThoughtId,
   demoThoughtDetails,
   demoThoughtEdges,
   demoThoughts,
@@ -12,10 +7,17 @@ import {
 import { ThoughtDetail } from "./thought-detail";
 import { ThoughtMap } from "./thought-map";
 
-export function ThoughtWorkspace() {
-  const [selectedThoughtId, setSelectedThoughtId] = useState(
-    demoSelectedThoughtId,
-  );
+type ThoughtWorkspaceProps = {
+  selectedThoughtId: string;
+  onSelectThought: (thoughtId: string) => void;
+  onBuildContext: () => void;
+};
+
+export function ThoughtWorkspace({
+  selectedThoughtId,
+  onSelectThought,
+  onBuildContext,
+}: ThoughtWorkspaceProps) {
   const selectedThought =
     demoThoughts.find((thought) => thought.id === selectedThoughtId) ??
     demoThoughts[0];
@@ -52,7 +54,7 @@ export function ThoughtWorkspace() {
             thoughts={demoThoughts}
             relationships={demoThoughtEdges}
             selectedThoughtId={selectedThought.id}
-            onSelectThought={setSelectedThoughtId}
+            onSelectThought={onSelectThought}
           />
         </div>
       </section>
@@ -61,6 +63,7 @@ export function ThoughtWorkspace() {
         key={selectedThought.id}
         thought={selectedThought}
         detail={demoThoughtDetails[selectedThought.id]}
+        onBuildContext={onBuildContext}
       />
     </main>
   );

@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 
+import { ContextEditor } from "@/components/context-editor/context-editor";
 import { ConversationImport } from "@/components/import/conversation-import";
 import { ThoughtWorkspace } from "@/components/thought-map/thought-workspace";
-import { demoConversationTitle } from "@/lib/mock/demo-analysis";
+import {
+  demoConversationTitle,
+  demoSelectedThoughtId,
+  demoThoughts,
+} from "@/lib/mock/demo-analysis";
 
-type AppView = "import" | "workspace";
+type AppView = "import" | "workspace" | "context";
 
 const steps = [
   { number: "01", title: "Import", description: "Paste a messy conversation." },
@@ -41,13 +46,19 @@ function ProductMark() {
 export function RefractApp() {
   const [view, setView] = useState<AppView>("import");
   const [conversation, setConversation] = useState("");
+  const [selectedThoughtId, setSelectedThoughtId] = useState(
+    demoSelectedThoughtId,
+  );
+  const selectedThought =
+    demoThoughts.find((thought) => thought.id === selectedThoughtId) ??
+    demoThoughts[0];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-ink/10 bg-background">
         <div
           className={`mx-auto flex h-16 w-full items-center px-5 sm:px-8 ${
-            view === "workspace" ? "max-w-none" : "max-w-6xl"
+            view === "import" ? "max-w-6xl" : "max-w-none"
           }`}
         >
           <ProductMark />
@@ -56,7 +67,7 @@ export function RefractApp() {
             <p className="ml-auto hidden text-xs tracking-[0.02em] text-muted sm:block">
               Context engineering for AI conversations
             </p>
-          ) : (
+          ) : view === "workspace" ? (
             <>
               <div className="mx-auto hidden items-center gap-2 text-sm sm:flex">
                 <span className="text-muted">Conversation</span>
@@ -73,6 +84,29 @@ export function RefractApp() {
                 className="ml-auto text-sm font-medium text-muted underline decoration-ink/15 underline-offset-4 transition-colors hover:text-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:ml-0"
               >
                 New conversation
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto hidden min-w-0 items-center gap-2 text-sm sm:flex">
+                <span className="text-muted">Conversation</span>
+                <span aria-hidden="true" className="text-ink/20">
+                  /
+                </span>
+                <span className="text-muted">{demoConversationTitle}</span>
+                <span aria-hidden="true" className="text-ink/20">
+                  /
+                </span>
+                <span className="font-medium text-ink">
+                  {selectedThought.title}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setView("workspace")}
+                className="ml-auto shrink-0 text-sm font-medium text-muted underline decoration-ink/15 underline-offset-4 transition-colors hover:text-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:ml-0"
+              >
+                Back to thought map
               </button>
             </>
           )}
@@ -101,7 +135,10 @@ export function RefractApp() {
             <ConversationImport
               conversation={conversation}
               onConversationChange={setConversation}
-              onRefract={() => setView("workspace")}
+              onRefract={() => {
+                setSelectedThoughtId(demoSelectedThoughtId);
+                setView("workspace");
+              }}
             />
           </section>
 
@@ -137,8 +174,18 @@ export function RefractApp() {
             </ol>
           </section>
         </main>
+      ) : view === "workspace" ? (
+        <ThoughtWorkspace
+          selectedThoughtId={selectedThought.id}
+          onSelectThought={setSelectedThoughtId}
+          onBuildContext={() => setView("context")}
+        />
       ) : (
-        <ThoughtWorkspace />
+        <ContextEditor
+          key={selectedThought.id}
+          thought={selectedThought}
+          conversation={conversation}
+        />
       )}
     </div>
   );

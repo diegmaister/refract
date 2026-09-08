@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-
 import type { ThoughtDetailContent } from "@/lib/mock/demo-analysis";
 import type { Thought } from "@/types/refract";
 
 type ThoughtDetailProps = {
   thought: Thought;
   detail: ThoughtDetailContent;
+  onBuildContext: () => void;
 };
 
 const typeLabels: Record<Thought["type"], string> = {
@@ -21,9 +20,11 @@ const typeLabels: Record<Thought["type"], string> = {
   open_question: "Open question",
 };
 
-export function ThoughtDetail({ thought, detail }: ThoughtDetailProps) {
-  const [contextMessage, setContextMessage] = useState("");
-
+export function ThoughtDetail({
+  thought,
+  detail,
+  onBuildContext,
+}: ThoughtDetailProps) {
   return (
     <aside
       aria-labelledby="thought-detail-title"
@@ -131,7 +132,7 @@ export function ThoughtDetail({ thought, detail }: ThoughtDetailProps) {
       <div className="border-t border-ink/10 bg-background/60 p-5 sm:px-8 lg:px-7">
         <button
           type="button"
-          onClick={() => setContextMessage("Context builder coming next.")}
+          onClick={onBuildContext}
           className="flex h-11 w-full items-center justify-between bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px"
         >
           Build context
@@ -150,13 +151,6 @@ export function ThoughtDetail({ thought, detail }: ThoughtDetailProps) {
             />
           </svg>
         </button>
-        <p
-          role="status"
-          aria-live="polite"
-          className="mt-2 min-h-5 text-xs text-accent"
-        >
-          {contextMessage}
-        </p>
       </div>
     </aside>
   );
