@@ -11,6 +11,7 @@ import {
 import type { Edge, NodeMouseHandler, NodeTypes } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
+import { layoutThoughtGraph } from "@/lib/refract/layout-thought-graph";
 import type { Thought, ThoughtEdge } from "@/types/refract";
 
 import { ThoughtNode } from "./thought-node";
@@ -34,14 +35,14 @@ const relationLabels: Partial<Record<ThoughtEdge["relation"], string>> = {
   branch_of: "branch of",
 };
 
-function getThoughtPosition(index: number, thoughtCount: number) {
-  const columnCount = Math.max(1, Math.ceil(Math.sqrt(thoughtCount * 1.5)));
+const directionalRelations = new Set<ThoughtEdge["relation"]>([
+  "led_to",
+  "depends_on",
+  "evolved_into",
+  "branch_of",
+]);
 
-  return {
-    x: (index % columnCount) * 300,
-    y: Math.floor(index / columnCount) * 190,
-  };
-}
+const fitViewOptions = { padding: 0.1, maxZoom: 1.05 } as const;
 
 export function ThoughtMap({
   thoughts,
@@ -49,50 +50,98 @@ export function ThoughtMap({
   selectedThoughtId,
   onSelectThought,
 }: ThoughtMapProps) {
+  const positions = useMemo(
+    () => layoutThoughtGraph(thoughts, relationships),
+    [relationships, thoughts],
+  );
+  const connectedThoughtIds = useMemo(() => {
+    const connectedIds = new Set<string>();
+
+    for (const relationship of relationships) {
+      if (relationship.source === selectedThoughtId) {
+        connectedIds.add(relationship.target);
+      }
+      if (relationship.target === selectedThoughtId) {
+        connectedIds.add(relationship.source);
+      }
+    }
+
+    return connectedIds;
+  }, [relationships, selectedThoughtId]);
   const nodes = useMemo<ThoughtFlowNode[]>(
     () =>
-      thoughts.map((thought, index) => ({
+      thoughts.map((thought) => ({
         id: thought.id,
         type: "thought",
-        position: getThoughtPosition(index, thoughts.length),
-        data: { thought },
+        position: positions.get(thought.id) ?? { x: 0, y: 0 },
+        data: {
+          thought,
+          directlyConnected: connectedThoughtIds.has(thought.id),
+          deEmphasized:
+            thought.id !== selectedThoughtId &&
+            !connectedThoughtIds.has(thought.id),
+        },
         selected: thought.id === selectedThoughtId,
         draggable: false,
         connectable: false,
         ariaLabel: `${thought.title}, ${thought.type}, ${thought.status}`,
       })),
-    [selectedThoughtId, thoughts],
+    [connectedThoughtIds, positions, selectedThoughtId, thoughts],
   );
 
   const edges = useMemo<Edge[]>(
     () =>
-      relationships.map((relationship, index) => ({
-        id: `${relationship.source}-${relationship.target}-${index}`,
-        source: relationship.source,
-        target: relationship.target,
-        type: "smoothstep",
-        label: relationLabels[relationship.relation],
-        selectable: false,
-        focusable: false,
-        animated: false,
-        style: { stroke: "#93a09b", strokeWidth: 1.15 },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: "#93a09b",
-          width: 12,
-          height: 12,
-        },
-        labelStyle: {
-          fill: "#66706c",
-          fontSize: 9,
-          fontWeight: 500,
-          letterSpacing: "0.02em",
-        },
-        labelBgStyle: { fill: "#f7f7f3", fillOpacity: 0.94 },
-        labelBgPadding: [4, 2],
-        labelBgBorderRadius: 0,
-      })),
-    [relationships],
+      relationships.map((relationship, index) => {
+        const directlyConnected =
+          relationship.source === selectedThoughtId ||
+          relationship.target === selectedThoughtId;
+        const isContradiction = relationship.relation === "contradicts";
+        const color = directlyConnected
+          ? isContradiction
+            ? "#665f59"
+            : "#286657"
+          : isContradiction
+            ? "#a09892"
+            : "#a7b0ac";
+
+        return {
+          id: `${relationship.source}-${relationship.target}-${index}`,
+          source: relationship.source,
+          target: relationship.target,
+          type: "default",
+          label: directlyConnected
+            ? relationLabels[relationship.relation]
+            : undefined,
+          selectable: false,
+          focusable: false,
+          animated: false,
+          zIndex: directlyConnected ? 1 : 0,
+          style: {
+            stroke: color,
+            strokeWidth: directlyConnected ? 2 : 1.1,
+            strokeDasharray: isContradiction ? "5 4" : undefined,
+            opacity: directlyConnected ? 0.96 : 0.5,
+          },
+          markerEnd: directionalRelations.has(relationship.relation)
+            ? {
+                type: MarkerType.ArrowClosed,
+                color,
+                width: directlyConnected ? 13 : 10,
+                height: directlyConnected ? 13 : 10,
+              }
+            : undefined,
+          labelStyle: {
+            fill: "#49635b",
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: "0.02em",
+          },
+          labelBgStyle: { fill: "#f7f7f3", fillOpacity: 0.96 },
+          labelBgPadding: [4, 2] as [number, number],
+          labelBgBorderRadius: 0,
+        };
+      }),
+    [relationships, selectedThoughtId],
   );
 
   const handleNodeClick: NodeMouseHandler<ThoughtFlowNode> = (_, node) => {
@@ -106,8 +155,8 @@ export function ThoughtMap({
       nodeTypes={nodeTypes}
       onNodeClick={handleNodeClick}
       fitView
-      fitViewOptions={{ padding: 0.14, minZoom: 0.35, maxZoom: 0.85 }}
-      minZoom={0.3}
+      fitViewOptions={fitViewOptions}
+      minZoom={0.22}
       maxZoom={1.35}
       nodesDraggable={false}
       nodesConnectable={false}
@@ -133,7 +182,7 @@ export function ThoughtMap({
       <Controls
         showInteractive={false}
         position="bottom-left"
-        fitViewOptions={{ padding: 0.14, maxZoom: 0.85 }}
+        fitViewOptions={fitViewOptions}
         aria-label="Thought map controls"
       />
     </ReactFlow>

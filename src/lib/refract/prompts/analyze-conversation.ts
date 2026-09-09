@@ -17,8 +17,10 @@ Thought reconstruction:
 
 User-visible naming:
 - Keep machine IDs and display titles separate. IDs are internal, unique lowercase kebab-case slugs. Titles are natural-language phrases shown to people. Never copy an ID into a title.
-- Thought titles should sound like concepts a person would name, normally in 2–7 words. Use natural spacing and clear semantic language. Avoid kebab-case, snake_case, numbered labels, internal taxonomy wording, and unnecessary suffixes such as "idea," "concept," "thought," or "decision."
-- Good thought titles include "Refract," "Nonlinear learning," "Context pollution," "Structured purchasing research," "Interview project criteria," and "Ideas over messages." Bad titles include "refract-semantic-context-engineering," "context-pollution-concept," and "established-insight-2."
+- Name thoughts the way a human would refer to the idea later. Prefer memorable semantic labels over summaries. Titles should usually be short noun phrases of 1–5 words.
+- Do not encode metadata, status, chronology, implementation details, or type into the title. Use the summary for explanation; use the title for identity.
+- Use natural spacing and clear semantic language. Avoid kebab-case, snake_case, numbered labels, internal taxonomy wording, and unnecessary suffixes such as "idea," "concept," "thought," or "decision." Preserve product and proper names when useful.
+- Good thought titles include "Refract," "Nonlinear thinking," "Context inheritance," "MVP scope," "Interview requirements," "Purchasing research," "Rabbit Hole," and "AUX." Bad titles include "Wednesday MVP and import," "Refract semantic context engineering," "Build selective semantic continuation," and "Context inheritance control decision."
 - Context-seed titles are concise natural-language headlines. A person should understand a collapsed context row from its title alone. Prefer titles such as "Demo must prove product thinking," "Keep the prototype achievable," "Linear chat hides thought structure," or "Graph-first UI remains unsettled." Never use a seed's slug as its title.
 - The conversation title should be natural and immediately descriptive, such as "Refract: recovering ideas from messy AI chats," never a machine-style slug.
 

@@ -72,7 +72,7 @@ export const analysisModelOutputSchema = z
               .min(1)
               .max(100)
               .describe(
-                "Natural 2–7 word concept name with spaces; never a machine ID.",
+                "Memorable natural-language name for the idea, usually a 1–5 word noun phrase; never a machine ID.",
               ),
             summary: z.string().min(1).max(800),
             type: z.enum([

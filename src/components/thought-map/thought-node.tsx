@@ -3,7 +3,11 @@ import type { Node, NodeProps } from "@xyflow/react";
 
 import type { Thought } from "@/types/refract";
 
-export type ThoughtNodeData = { thought: Thought } & Record<string, unknown>;
+export type ThoughtNodeData = {
+  thought: Thought;
+  directlyConnected: boolean;
+  deEmphasized: boolean;
+} & Record<string, unknown>;
 export type ThoughtFlowNode = Node<ThoughtNodeData, "thought">;
 
 const typeLabels: Record<Thought["type"], string> = {
@@ -22,11 +26,13 @@ export function ThoughtNode({ data, selected }: NodeProps<ThoughtFlowNode>) {
 
   return (
     <div
-      className={`thought-node w-52 border bg-surface px-4 py-3.5 transition-[border-color,box-shadow,transform] ${
+      className={`thought-node flex h-32 w-66 flex-col border bg-surface px-4 py-3.5 transition-[border-color,box-shadow,opacity,transform] ${
         selected
           ? "border-accent shadow-[0_0_0_2px_rgba(40,102,87,0.12)]"
-          : "border-ink/15 shadow-[0_5px_16px_rgba(23,32,29,0.04)]"
-      }`}
+          : data.directlyConnected
+            ? "border-ink/25 shadow-[0_5px_16px_rgba(23,32,29,0.05)]"
+            : "border-ink/15 shadow-[0_5px_16px_rgba(23,32,29,0.04)]"
+      } ${data.deEmphasized ? "opacity-75 hover:opacity-100" : "opacity-100"}`}
     >
       <Handle
         type="target"
@@ -51,11 +57,11 @@ export function ThoughtNode({ data, selected }: NodeProps<ThoughtFlowNode>) {
         )}
       </div>
 
-      <p className="mt-2 text-[15px] font-semibold leading-5 tracking-[-0.02em] text-ink">
+      <p className="mt-2 line-clamp-2 break-words text-base font-semibold leading-5 tracking-[-0.02em] text-ink">
         {thought.title}
       </p>
 
-      <div className="mt-3 flex items-center gap-1.5 text-[10px] capitalize text-muted">
+      <div className="mt-auto flex items-center gap-1.5 pt-3 text-[10px] capitalize text-muted">
         <span
           aria-hidden="true"
           className={`size-1.5 rounded-full ${
