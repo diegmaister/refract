@@ -10,6 +10,7 @@ export type DensityPreview = {
 type ContextDensitySelectorProps = {
   density: ContextDensity;
   previews: Record<ContextDensity, DensityPreview>;
+  richMatchesBalanced: boolean;
   pendingDensity: ContextDensity | null;
   onSelect: (density: ContextDensity) => void;
   onConfirmSwitch: () => void;
@@ -40,6 +41,7 @@ function packageSummary(preview: DensityPreview): string {
 export function ContextDensitySelector({
   density,
   previews,
+  richMatchesBalanced,
   pendingDensity,
   onSelect,
   onConfirmSwitch,
@@ -72,17 +74,20 @@ export function ContextDensitySelector({
         {contextDensityOptions.map((option) => {
           const selected = option.density === density;
           const preview = previews[option.density];
+          const isRedundantRichOption =
+            option.density === "rich" && richMatchesBalanced;
 
           return (
             <button
               key={option.density}
               type="button"
               aria-pressed={selected}
+              disabled={isRedundantRichOption}
               onClick={() => onSelect(option.density)}
-              className={`min-w-0 border-b border-ink/10 px-3 py-3 text-left transition-colors last:border-b-0 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:border-b-0 sm:border-r sm:last:border-r-0 sm:px-4 ${
+              className={`min-w-0 border-b border-ink/10 px-3 py-3 text-left transition-colors last:border-b-0 focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-transparent sm:border-b-0 sm:border-r sm:last:border-r-0 sm:px-4 ${
                 selected
                   ? "bg-accent-soft/70"
-                  : "hover:bg-accent-soft/30"
+                  : "enabled:hover:bg-accent-soft/30"
               }`}
             >
               <span className="flex items-center justify-between gap-2">
@@ -96,7 +101,9 @@ export function ContextDensitySelector({
                 )}
               </span>
               <span className="mt-1 block text-[10px] leading-4 text-muted">
-                {option.description}
+                {isRedundantRichOption
+                  ? "No additional relevant context beyond Balanced."
+                  : option.description}
               </span>
               <span className="mt-2 block font-mono text-[9px] text-ink/65">
                 {preview.objectCount} objects ·{" "}

@@ -110,6 +110,26 @@ function createDensityPreview(
   };
 }
 
+function densitySelectionsMatch(
+  inventory: ContextSuggestion[],
+  firstDensity: ContextDensity,
+  secondDensity: ContextDensity,
+): boolean {
+  const selectedItemKeys = (density: ContextDensity) =>
+    applyContextDensity(inventory, density)
+      .filter((item) => item.state !== "drop")
+      .map((item) => `${item.id}:${item.state}`)
+      .sort();
+  const firstSelection = selectedItemKeys(firstDensity);
+  const secondSelection = selectedItemKeys(secondDensity);
+  const secondSelectionKeys = new Set(secondSelection);
+
+  return (
+    firstSelection.length === secondSelection.length &&
+    firstSelection.every((itemKey) => secondSelectionKeys.has(itemKey))
+  );
+}
+
 export function ContextEditor({
   thought,
   conversation,
@@ -153,6 +173,10 @@ export function ContextEditor({
       rich: createDensityPreview(thought, initialInventory, "rich"),
     }),
     [initialInventory, thought],
+  );
+  const richMatchesBalanced = useMemo(
+    () => densitySelectionsMatch(initialInventory, "balanced", "rich"),
+    [initialInventory],
   );
   const customIntentIsValid =
     continuationIntent.type !== "custom" ||
@@ -337,6 +361,7 @@ export function ContextEditor({
           <ContextDensitySelector
             density={density}
             previews={densityPreviews}
+            richMatchesBalanced={richMatchesBalanced}
             pendingDensity={pendingDensity}
             onSelect={requestDensity}
             onConfirmSwitch={() => {
