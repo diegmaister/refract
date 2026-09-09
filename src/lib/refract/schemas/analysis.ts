@@ -7,7 +7,7 @@ const semanticIdSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   .describe("Machine-safe internal identifier in lowercase kebab-case.");
 
-const sourceMessageIdsSchema = z.array(z.string().min(1)).min(1).max(100);
+const sourceMessageIdsSchema = z.array(z.string().min(1)).min(1).max(10_000);
 
 const contextSeedSchema = z
   .object({

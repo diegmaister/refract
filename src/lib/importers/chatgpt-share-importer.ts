@@ -10,6 +10,7 @@ import { z } from "zod";
 import {
   type ConversationImporter,
   type ImportedConversation,
+  MAX_IMPORTED_CONVERSATION_CHARS,
   importedConversationSchema,
   messagesToRawTranscript,
 } from "@/lib/importers/conversation-importer";
@@ -17,7 +18,6 @@ import { normalizeChatGptShareUrl } from "@/lib/importers/chatgpt-share-url";
 
 const MAX_REDIRECTS = 3;
 const MAX_SHARE_HTML_CHARACTERS = 10_000_000;
-const MAX_TRANSCRIPT_CHARACTERS = 200_000;
 
 const parsedShareSchema = z.object({
   title: z.string().max(500),
@@ -163,7 +163,7 @@ export class ChatGPTShareImporter implements ConversationImporter {
     }
 
     const rawTranscript = messagesToRawTranscript(messages);
-    if (rawTranscript.length > MAX_TRANSCRIPT_CHARACTERS) {
+    if (rawTranscript.length > MAX_IMPORTED_CONVERSATION_CHARS) {
       throw new ChatGptShareImportError("conversation_too_large");
     }
 

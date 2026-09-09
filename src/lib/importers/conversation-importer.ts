@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const MAX_IMPORTED_CONVERSATION_CHARS = 2_000_000;
+export const MAX_IMPORTED_CONVERSATION_MESSAGES = 10_000;
+
 const importedMessageSchema = z
   .object({
     id: z.string().min(1),
@@ -7,15 +10,21 @@ const importedMessageSchema = z
     role: z.enum(["user", "assistant"]),
     roleConfidence: z.literal(1),
     roleSource: z.literal("explicit"),
-    content: z.string().min(1).max(200_000),
+    content: z.string().min(1).max(MAX_IMPORTED_CONVERSATION_CHARS),
   })
   .strict();
 
 export const importedConversationSchema = z
   .object({
     title: z.string().min(1).max(500).optional(),
-    messages: z.array(importedMessageSchema).min(1).max(500),
-    rawTranscript: z.string().min(1).max(200_000),
+    messages: z
+      .array(importedMessageSchema)
+      .min(1)
+      .max(MAX_IMPORTED_CONVERSATION_MESSAGES),
+    rawTranscript: z
+      .string()
+      .min(1)
+      .max(MAX_IMPORTED_CONVERSATION_CHARS),
   })
   .strict();
 

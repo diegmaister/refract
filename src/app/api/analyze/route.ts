@@ -1,13 +1,19 @@
 import { z } from "zod";
 
+import {
+  MAX_IMPORTED_CONVERSATION_CHARS,
+  MAX_IMPORTED_CONVERSATION_MESSAGES,
+} from "@/lib/importers/conversation-importer";
 import { OpenAIConfigurationError } from "@/lib/llm/openai";
 import {
   analyzeConversation,
   ConversationAnalysisError,
 } from "@/lib/refract/analyze-conversation";
 
-const MAX_TRANSCRIPT_CHARACTERS = 200_000;
-const MAX_MESSAGES = 500;
+export const maxDuration = 600;
+
+const HARD_ANALYSIS_MAX_CHARS = MAX_IMPORTED_CONVERSATION_CHARS;
+const HARD_ANALYSIS_MAX_MESSAGES = MAX_IMPORTED_CONVERSATION_MESSAGES;
 
 const normalizedMessageSchema = z
   .object({
@@ -16,7 +22,7 @@ const normalizedMessageSchema = z
     role: z.enum(["user", "assistant", "unknown"]),
     roleConfidence: z.number().min(0).max(1),
     roleSource: z.enum(["explicit", "inferred", "unknown"]),
-    content: z.string().min(1).max(MAX_TRANSCRIPT_CHARACTERS),
+    content: z.string().min(1).max(HARD_ANALYSIS_MAX_CHARS),
   })
   .strict();
 
@@ -27,12 +33,15 @@ const analyzeRequestSchema = z.union([
         .string()
         .trim()
         .min(1)
-        .max(MAX_TRANSCRIPT_CHARACTERS),
+        .max(HARD_ANALYSIS_MAX_CHARS),
     })
     .strict(),
   z
     .object({
-      messages: z.array(normalizedMessageSchema).min(1).max(MAX_MESSAGES),
+      messages: z
+        .array(normalizedMessageSchema)
+        .min(1)
+        .max(HARD_ANALYSIS_MAX_MESSAGES),
     })
     .strict()
     .superRefine(({ messages }, context) => {
@@ -56,7 +65,7 @@ const analyzeRequestSchema = z.union([
         });
       }
 
-      if (contentLength > MAX_TRANSCRIPT_CHARACTERS) {
+      if (contentLength > HARD_ANALYSIS_MAX_CHARS) {
         context.addIssue({
           code: "custom",
           message: "Normalized messages are too large.",
@@ -67,6 +76,34 @@ const analyzeRequestSchema = z.union([
 
 function errorResponse(code: string, message: string, status: number) {
   return Response.json({ error: { code, message } }, { status });
+}
+
+function exceedsAnalysisSafetyLimit(input: unknown): boolean {
+  if (!input || typeof input !== "object") return false;
+
+  if (
+    "transcript" in input &&
+    typeof input.transcript === "string" &&
+    input.transcript.length > HARD_ANALYSIS_MAX_CHARS
+  ) {
+    return true;
+  }
+
+  if (!("messages" in input) || !Array.isArray(input.messages)) return false;
+  if (input.messages.length > HARD_ANALYSIS_MAX_MESSAGES) return true;
+
+  let contentLength = 0;
+  for (const message of input.messages) {
+    if (!message || typeof message !== "object" || !("content" in message)) {
+      continue;
+    }
+    if (typeof message.content !== "string") continue;
+
+    contentLength += message.content.length;
+    if (contentLength > HARD_ANALYSIS_MAX_CHARS) return true;
+  }
+
+  return false;
 }
 
 export async function POST(request: Request) {
@@ -85,9 +122,17 @@ export async function POST(request: Request) {
   const parsedRequest = analyzeRequestSchema.safeParse(requestBody);
 
   if (!parsedRequest.success) {
+    if (exceedsAnalysisSafetyLimit(requestBody)) {
+      return errorResponse(
+        "CONVERSATION_TOO_LARGE",
+        "This conversation is unusually large and exceeds Refract's analysis safety limit. Try trimming it or exporting a smaller section.",
+        413,
+      );
+    }
+
     return errorResponse(
       "INVALID_TRANSCRIPT",
-      `Enter a non-empty transcript or normalized message list under ${MAX_TRANSCRIPT_CHARACTERS.toLocaleString("en-US")} characters.`,
+      `Enter a non-empty transcript or normalized message list under ${HARD_ANALYSIS_MAX_CHARS.toLocaleString("en-US")} characters.`,
       400,
     );
   }

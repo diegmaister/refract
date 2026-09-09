@@ -6,6 +6,10 @@ import { ContextEditor } from "@/components/context-editor/context-editor";
 import { ConversationImport } from "@/components/import/conversation-import";
 import { ThoughtWorkspace } from "@/components/thought-map/thought-workspace";
 import type { ImportedConversation } from "@/lib/importers/conversation-importer";
+import {
+  countMessageContentCharacters,
+  DIRECT_ANALYSIS_MAX_CHARS,
+} from "@/lib/refract/analysis-limits";
 import type { RefractAnalysis } from "@/types/refract";
 
 type AppView = "import" | "workspace" | "context";
@@ -60,16 +64,32 @@ function getApiErrorMessage(payload: unknown): string | undefined {
 export function RefractApp() {
   const [view, setView] = useState<AppView>("import");
   const [conversation, setConversation] = useState("");
+  const [importedMessages, setImportedMessages] = useState<
+    ImportedConversation["messages"] | null
+  >(null);
   const [analysis, setAnalysis] = useState<RefractAnalysis | null>(null);
   const [selectedThoughtId, setSelectedThoughtId] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzingLargeConversation, setIsAnalyzingLargeConversation] =
+    useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const selectedThought =
     analysis?.thoughts.find((thought) => thought.id === selectedThoughtId) ??
     analysis?.thoughts[0];
 
   async function handleRefract(importedConversation?: ImportedConversation) {
+    const normalizedMessages =
+      importedConversation?.messages ?? importedMessages;
+    const isLargeConversation = normalizedMessages
+      ? countMessageContentCharacters(normalizedMessages) >
+        DIRECT_ANALYSIS_MAX_CHARS
+      : conversation.length > DIRECT_ANALYSIS_MAX_CHARS;
+
+    if (importedConversation) {
+      setImportedMessages(importedConversation.messages);
+    }
     setIsAnalyzing(true);
+    setIsAnalyzingLargeConversation(isLargeConversation);
     setAnalysisError(null);
 
     try {
@@ -77,8 +97,8 @@ export function RefractApp() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          importedConversation
-            ? { messages: importedConversation.messages }
+          normalizedMessages
+            ? { messages: normalizedMessages }
             : { transcript: conversation },
         ),
       });
@@ -118,6 +138,7 @@ export function RefractApp() {
       setView("import");
     } finally {
       setIsAnalyzing(false);
+      setIsAnalyzingLargeConversation(false);
     }
   }
 
@@ -207,10 +228,12 @@ export function RefractApp() {
               conversation={conversation}
               onConversationChange={(nextConversation) => {
                 setConversation(nextConversation);
+                setImportedMessages(null);
                 setAnalysisError(null);
               }}
               onRefract={handleRefract}
               isAnalyzing={isAnalyzing}
+              isAnalyzingLargeConversation={isAnalyzingLargeConversation}
               analysisError={analysisError}
             />
           </section>

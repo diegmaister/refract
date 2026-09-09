@@ -62,8 +62,12 @@ export async function POST(request: Request) {
             : 502;
 
       return errorResponse(
-        "SHARE_IMPORT_FAILED",
-        "We couldn't import this share link. You can still paste the conversation below.",
+        error.code === "conversation_too_large"
+          ? "CONVERSATION_TOO_LARGE"
+          : "SHARE_IMPORT_FAILED",
+        error.code === "conversation_too_large"
+          ? "This shared conversation is unusually large and exceeds Refract's import safety limit. Try trimming it or exporting and pasting a shorter section."
+          : "We couldn't import this share link. You can still paste the conversation below.",
         status,
       );
     }

@@ -19,14 +19,29 @@ type ConversationImportProps = {
   onConversationChange: (conversation: string) => void;
   onRefract: (importedConversation?: ImportedConversation) => Promise<void>;
   isAnalyzing: boolean;
+  isAnalyzingLargeConversation: boolean;
   analysisError: string | null;
 };
+
+function getApiErrorMessage(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object" || !("error" in payload)) {
+    return undefined;
+  }
+
+  const error = payload.error;
+  if (!error || typeof error !== "object" || !("message" in error)) {
+    return undefined;
+  }
+
+  return typeof error.message === "string" ? error.message : undefined;
+}
 
 export function ConversationImport({
   conversation,
   onConversationChange,
   onRefract,
   isAnalyzing,
+  isAnalyzingLargeConversation,
   analysisError,
 }: ConversationImportProps) {
   const [shareUrl, setShareUrl] = useState("");
@@ -81,18 +96,27 @@ export function ConversationImport({
           : undefined,
       );
 
-      if (!response.ok || !importedConversation.success) {
-        throw new Error("Share import failed.");
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(payload) ??
+            "We couldn't import this share link. You can still paste the conversation below.",
+        );
+      }
+
+      if (!importedConversation.success) {
+        throw new Error("The imported conversation had an unexpected format.");
       }
 
       onConversationChange(importedConversation.data.rawTranscript);
       setIsImporting(false);
       await onRefract(importedConversation.data);
-    } catch {
+    } catch (error) {
       setShareFeedback({
         kind: "error",
         message:
-          "We couldn't import this share link. You can still paste the conversation below.",
+          error instanceof Error
+            ? error.message
+            : "We couldn't import this share link. You can still paste the conversation below.",
       });
     } finally {
       setIsImporting(false);
@@ -177,7 +201,9 @@ export function ConversationImport({
             {isImporting
               ? "Importing conversation…"
               : isAnalyzing
-                ? "Refracting conversation…"
+                ? isAnalyzingLargeConversation
+                  ? "Refracting large conversation…"
+                  : "Refracting conversation…"
                 : "Import & Refract"}
             {!isBusy && (
               <svg
@@ -298,7 +324,13 @@ export function ConversationImport({
           aria-busy={isAnalyzing}
           className="inline-flex h-11 shrink-0 items-center justify-center gap-3 bg-ink px-5 text-sm font-semibold text-white transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-wait disabled:bg-ink/55 sm:min-w-32"
         >
-          {isAnalyzing ? "Refracting…" : analysisError ? "Retry" : "Refract"}
+          {isAnalyzing
+            ? isAnalyzingLargeConversation
+              ? "Refracting large conversation…"
+              : "Refracting…"
+            : analysisError
+              ? "Retry"
+              : "Refract"}
           <svg
             aria-hidden="true"
             width="16"
@@ -325,9 +357,15 @@ export function ConversationImport({
         {manualError && <p className="text-[#a44032]">{manualError}</p>}
         {isAnalyzing && (
           <div className="text-muted">
-            <p className="font-medium text-ink">Refracting conversation…</p>
+            <p className="font-medium text-ink">
+              {isAnalyzingLargeConversation
+                ? "Refracting a large conversation…"
+                : "Refracting conversation…"}
+            </p>
             <p className="mt-1 text-xs">
-              Recovering recurring thoughts, constraints, and relationships.
+              {isAnalyzingLargeConversation
+                ? "Recovering recurring thoughts across the full chat."
+                : "Recovering recurring thoughts, constraints, and relationships."}
             </p>
           </div>
         )}
